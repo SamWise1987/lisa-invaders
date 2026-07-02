@@ -2,7 +2,9 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>LISA INVADERS — Birra del Borgo</title>
 <style>
   :root {
@@ -11,9 +13,15 @@
     --bdb-cream: #f5edd8;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     background: radial-gradient(ellipse at 50% 30%, #232f63 0%, #10173a 55%, #090d24 100%);
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -21,6 +29,8 @@
     font-family: "Courier New", monospace;
     color: var(--bdb-cream);
     padding: 12px;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    overflow-x: hidden;
   }
   h1 {
     font-size: clamp(20px, 4vw, 34px);
@@ -39,13 +49,26 @@
   }
   #game-wrap {
     position: relative;
+    max-width: 100%;
     border: 3px solid var(--bdb-red);
     border-radius: 8px;
     box-shadow: 0 0 30px rgba(200,16,46,.35), inset 0 0 60px rgba(0,0,0,.5);
     background: #0a0f2a;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
   }
-  #game-wrap { max-width: 100%; }
-  canvas { display: block; border-radius: 5px; max-width: 100%; height: auto; }
+  canvas {
+    display: block;
+    border-radius: 5px;
+    max-width: 100%;
+    height: auto;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
   #hud {
     display: flex;
     gap: 18px;
@@ -124,8 +147,9 @@
       <kbd>P</kbd> pausa &nbsp;·&nbsp; <kbd>M</kbd> muto &nbsp;·&nbsp; <kbd>R</kbd> riavvia
     </div>
     <div class="instr-card">
-      <b>📱 SU IPHONE</b>
-      Tocca lo schermo per iniziare, poi tieni il dito sul riquadro di gioco: trascina per muovere la Lisa, ogni tocco spara.<br>
+      <b>📱 SU TELEFONO</b>
+      Tocca il riquadro di gioco per iniziare. Tieni il dito sullo schermo e trascina per muovere la Lisa; ogni tocco spara.<br>
+      Per giocare meglio, aggiungi la pagina alla schermata Home (Safari: Condividi → Aggiungi a Home).<br>
       Usa i pulsanti sotto per suono, pausa e riavvio.
     </div>
   </div>
