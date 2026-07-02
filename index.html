@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#10173a">
 <title>LISA INVADERS — Birra del Borgo</title>
 <style>
   :root {
@@ -88,8 +90,19 @@
     padding: 8px 16px;
     cursor: pointer;
     transition: all .15s;
+    min-height: 40px;
   }
   button:hover { background: var(--bdb-red); color: #fff; box-shadow: 0 0 12px rgba(200,16,46,.7); }
+  @media (pointer: coarse) {
+    button {
+      min-height: 44px;
+      padding: 10px 18px;
+      font-size: 14px;
+    }
+    h1 { letter-spacing: 3px; }
+    #instructions { gap: 10px; }
+    .instr-card { min-width: 0; flex: 1 1 100%; }
+  }
   .hint { font-size: 11px; color: #6d7fc4; margin-top: 4px; text-align: center; line-height: 1.6; }
   #instructions {
     margin-top: 14px;
@@ -125,6 +138,12 @@
     font-size: 11px;
     color: #f5edd8;
   }
+  .instr-mobile { display: none; }
+  .instr-desktop { display: block; }
+  @media (pointer: coarse) {
+    .instr-mobile { display: block; }
+    .instr-desktop { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -140,19 +159,20 @@
   </div>
   <div class="hint">Difendi la birra artigianale da Bud, Beck's, Corona e Tennent's!</div>
   <div id="instructions">
-    <div class="instr-card">
+    <div class="instr-card instr-desktop">
       <b>💻 SU PC</b>
       <kbd>←</kbd> <kbd>→</kbd> oppure <kbd>A</kbd> <kbd>D</kbd> per muoverti<br>
-      <kbd>SPAZIO</kbd> per sparare<br>
+      <kbd>SPAZIO</kbd> per sparare · clic sul gioco per sparare, trascina per muovere<br>
       <kbd>P</kbd> pausa &nbsp;·&nbsp; <kbd>M</kbd> muto &nbsp;·&nbsp; <kbd>R</kbd> riavvia
     </div>
-    <div class="instr-card">
+    <div class="instr-card instr-mobile">
       <b>📱 SU TELEFONO</b>
       Tocca il riquadro di gioco per iniziare. Tieni il dito sullo schermo e trascina per muovere la Lisa; ogni tocco spara.<br>
       Per giocare meglio, aggiungi la pagina alla schermata Home (Safari: Condividi → Aggiungi a Home).<br>
       Usa i pulsanti sotto per suono, pausa e riavvio.
     </div>
   </div>
+  <!-- deploy-check: unified-desktop-mobile -->
   <script src="game.js"></script>
 </body>
 </html>

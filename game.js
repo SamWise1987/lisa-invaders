@@ -548,9 +548,10 @@
     keys[e.key.length === 1 ? e.key.toLowerCase() : e.key] = false;
   });
 
-  // Touch / pointer: trascina per muovere, tocca per sparare
+  // Touch / pointer: touch = trascina + spara; mouse = clic spara, trascina per muovere
   let dragging = false;
   let activePointerId = null;
+  const isTouchPointer = e => e.pointerType === 'touch' || e.pointerType === 'pen';
 
   function canvasXFromEvent(e) {
     const rect = canvas.getBoundingClientRect();
@@ -564,26 +565,30 @@
 
   function onPointerDown(e) {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    e.preventDefault();
+    if (isTouchPointer(e)) e.preventDefault();
     sound.ensure();
     if (state === STATE.START) { resetGame(); return; }
     if (state === STATE.GAMEOVER) { resetGame(); return; }
     dragging = true;
     activePointerId = e.pointerId;
     canvas.setPointerCapture(e.pointerId);
-    movePlayerToPointer(e);
-    firePlayer();
+    if (isTouchPointer(e)) {
+      movePlayerToPointer(e);
+      firePlayer();
+    } else {
+      firePlayer();
+    }
   }
 
   function onPointerMove(e) {
     if (!dragging || activePointerId !== e.pointerId || state !== STATE.PLAYING) return;
-    e.preventDefault();
+    if (isTouchPointer(e)) e.preventDefault();
     movePlayerToPointer(e);
   }
 
   function onPointerUp(e) {
     if (activePointerId !== e.pointerId) return;
-    e.preventDefault();
+    if (isTouchPointer(e)) e.preventDefault();
     dragging = false;
     activePointerId = null;
     if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
@@ -595,12 +600,9 @@
   canvas.addEventListener('pointercancel', onPointerUp);
   canvas.addEventListener('contextmenu', e => e.preventDefault());
 
-  // Blocca scroll/zoom su touch legacy (Safari vecchi)
-  ['touchstart', 'touchmove'].forEach(type => {
-    canvas.addEventListener(type, e => {
-      if (e.cancelable) e.preventDefault();
-    }, { passive: false });
-  });
+  // Blocca scroll/zoom su touch legacy (Safari)
+  canvas.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+  canvas.addEventListener('touchmove', e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
 
   // Bottoni
   const btnSound = document.getElementById('btn-sound');
