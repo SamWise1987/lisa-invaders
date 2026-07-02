@@ -6,16 +6,18 @@ Un gioco stile *Space Invaders* dove **Lisa** — la lager italiana non filtrata
 
 ## Come si gioca
 
-### 💻 Su PC
+### 💻 Su PC (tastiera e mouse)
 - `←` `→` oppure `A` `D` per muoverti
 - `SPAZIO` per sparare
+- Clic sul gioco per sparare, trascina con il mouse per muoverti
 - `P` pausa · `M` muto · `R` riavvia
 
-### 📱 Su iPhone / mobile
-- Tocca lo schermo per iniziare
-- Trascina il dito sul riquadro di gioco per muovere la Lisa
+### 📱 Su iPhone / telefono
+- Tocca il riquadro di gioco per iniziare
+- Tieni il dito sullo schermo e trascina per muovere la Lisa
 - Ogni tocco spara
 - Usa i pulsanti sotto il gioco per suono, pausa e riavvio
+- Consiglio: aggiungi la pagina alla schermata Home (Safari → Condividi → Aggiungi a Home) per evitare zoom e scroll del browser
 
 ## Punteggi
 
@@ -35,4 +37,31 @@ HTML5 Canvas + JavaScript vanilla, effetti sonori retrò generati con WebAudio (
 ```bash
 python3 -m http.server 8000
 # poi apri http://localhost:8000
+```
+
+## Deploy su Vercel
+
+Sito pubblicato su [lisa-invaders.vercel.app](https://lisa-invaders.vercel.app).
+
+### Dopo il merge su `master`
+
+1. Vercel → progetto **lisa-invaders** → **Deployments**
+2. Verifica che il deploy più recente abbia commit su `master` e stato **Production**
+3. Se il deploy è solo **Preview**: menu **⋯** → **Promote to Production**
+4. Controlla che **Settings → Git → Production Branch** sia **`master`**
+
+### Verifica che il deploy sia aggiornato
+
+Apri il sorgente della pagina e cerca il commento:
+
+```html
+<!-- deploy-check: unified-desktop-mobile -->
+```
+
+Se non compare, il sito live non ha ancora l'ultima versione.
+
+### Deploy manuale (alternativa)
+
+```bash
+npx vercel --prod
 ```
