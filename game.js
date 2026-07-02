@@ -550,20 +550,57 @@
 
   // Touch / pointer: trascina per muovere, tocca per sparare
   let dragging = false;
-  canvas.addEventListener('pointerdown', e => {
+  let activePointerId = null;
+
+  function canvasXFromEvent(e) {
+    const rect = canvas.getBoundingClientRect();
+    return (e.clientX - rect.left) * (W / rect.width);
+  }
+
+  function movePlayerToPointer(e) {
+    const x = canvasXFromEvent(e);
+    player.x = Math.max(8, Math.min(W - player.w - 8, x - player.w / 2));
+  }
+
+  function onPointerDown(e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
     sound.ensure();
     if (state === STATE.START) { resetGame(); return; }
     if (state === STATE.GAMEOVER) { resetGame(); return; }
     dragging = true;
+    activePointerId = e.pointerId;
+    canvas.setPointerCapture(e.pointerId);
+    movePlayerToPointer(e);
     firePlayer();
+  }
+
+  function onPointerMove(e) {
+    if (!dragging || activePointerId !== e.pointerId || state !== STATE.PLAYING) return;
+    e.preventDefault();
+    movePlayerToPointer(e);
+  }
+
+  function onPointerUp(e) {
+    if (activePointerId !== e.pointerId) return;
+    e.preventDefault();
+    dragging = false;
+    activePointerId = null;
+    if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+  }
+
+  canvas.addEventListener('pointerdown', onPointerDown);
+  canvas.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('pointerup', onPointerUp);
+  canvas.addEventListener('pointercancel', onPointerUp);
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Blocca scroll/zoom su touch legacy (Safari vecchi)
+  ['touchstart', 'touchmove'].forEach(type => {
+    canvas.addEventListener(type, e => {
+      if (e.cancelable) e.preventDefault();
+    }, { passive: false });
   });
-  canvas.addEventListener('pointermove', e => {
-    if (!dragging || state !== STATE.PLAYING) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (W / rect.width);
-    player.x = Math.max(8, Math.min(W - player.w - 8, x - player.w / 2));
-  });
-  window.addEventListener('pointerup', () => { dragging = false; });
 
   // Bottoni
   const btnSound = document.getElementById('btn-sound');
