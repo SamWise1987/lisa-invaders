@@ -41,7 +41,9 @@ python3 -m http.server 8000
 
 ## Deploy su Vercel
 
-Sito pubblicato su [lisa-invaders.vercel.app](https://lisa-invaders.vercel.app).
+Sito statico (HTML/JS, nessuna build). Su Vercel imposta **Framework Preset: Other** e lascia vuoto il **Build Command**.
+
+Pubblicato su [lisa-invaders.vercel.app](https://lisa-invaders.vercel.app).
 
 ### Dopo il merge su `master`
 
