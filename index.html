@@ -51,9 +51,7 @@
   }
   #game-wrap {
     position: relative;
-    width: 900px;
     max-width: 100%;
-    aspect-ratio: 900 / 640;
     border: 3px solid var(--bdb-red);
     border-radius: 8px;
     box-shadow: 0 0 30px rgba(200,16,46,.35), inset 0 0 60px rgba(0,0,0,.5);
@@ -62,31 +60,16 @@
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
-    overflow: hidden;
   }
-  #game-container {
-    position: absolute;
-    inset: 0;
+  canvas {
+    display: block;
     border-radius: 5px;
+    max-width: 100%;
+    height: auto;
     touch-action: none;
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
-    pointer-events: auto;
-  }
-  #game-container canvas {
-    display: block;
-    width: 100% !important;
-    height: 100% !important;
-    border-radius: 5px;
-  }
-  #hud-overlay {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    border-radius: 5px;
   }
   #hud {
     display: flex;
@@ -167,8 +150,7 @@
   <h1>🍺 LISA INVADERS</h1>
   <div class="subtitle">La lager italiana contro l'invasione industriale</div>
   <div id="game-wrap">
-    <div id="game-container"></div>
-    <canvas id="hud-overlay" width="900" height="640"></canvas>
+    <canvas id="game" width="900" height="640"></canvas>
   </div>
   <div id="hud">
     <button id="btn-sound">🔊 SUONO: ON</button>
@@ -190,9 +172,7 @@
       Usa i pulsanti sotto per suono, pausa e riavvio.
     </div>
   </div>
-  <!-- deploy-check: 3d-mesh-bottles-v2 -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-  <script src="game-state.js"></script>
+  <!-- deploy-check: unified-desktop-mobile -->
   <script src="game.js"></script>
 </body>
 </html>

@@ -58,14 +58,11 @@ npx vercel --prod
 Serve aver fatto `npx vercel link` al progetto la prima volta.
 
 
-HTML5 Canvas + **Three.js** (CDN) + JavaScript vanilla, rendering 3D con prospettiva e illuminazione. La logica di punteggio e livelli è in `game-state.js` (testata con `node tests/game-state.test.js`). Effetti sonori retrò generati con WebAudio (nessun file audio). Nessuna build: basta aprire `index.html` o servire la cartella con un qualsiasi server statico.
+HTML5 Canvas + JavaScript vanilla, effetti sonori retrò generati con WebAudio (nessun file audio). Nessuna dipendenza, nessuna build: basta aprire `index.html` o servire la cartella con un qualsiasi server statico.
 
 ```bash
 python3 -m http.server 8000
 # poi apri http://localhost:8000
-
-# Test logica punteggio/livelli
-node tests/game-state.test.js
 ```
 
 ## Deploy su Vercel
@@ -86,7 +83,7 @@ Pubblicato su [lisa-invaders.vercel.app](https://lisa-invaders.vercel.app).
 Apri il sorgente della pagina e cerca il commento:
 
 ```html
-<!-- deploy-check: 3d-threejs-scoring -->
+<!-- deploy-check: unified-desktop-mobile -->
 ```
 
 Se non compare, il sito live non ha ancora l'ultima versione.
