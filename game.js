@@ -16,9 +16,9 @@
   scene.background = new THREE.Color(0x0a0f2a);
   scene.fog = new THREE.Fog(0x0a0f2a, 500, 1400);
 
-  const camera = new THREE.PerspectiveCamera(48, W / H, 1, 2500);
-  camera.position.set(W * 0.5, 320, H * 0.5 + 420);
-  camera.lookAt(W * 0.5, 0, H * 0.5);
+  const camera = new THREE.PerspectiveCamera(40, W / H, 1, 2500);
+  camera.position.set(W * 0.5, 520, H + 560);
+  camera.lookAt(W * 0.5, 0, H * 0.42);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setSize(W, H);
@@ -91,19 +91,56 @@
     textures[key].colorSpace = THREE.SRGBColorSpace;
   }
 
-  function makeBottleSprite(key, w, h, flip = false) {
-    const tex = textures[key];
-    const mat = new THREE.SpriteMaterial({
-      map: tex && !tex.broken ? tex : null,
-      color: tex && !tex.broken ? 0xffffff : 0xc8102e,
-      transparent: true,
-      depthWrite: false,
-    });
-    const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(w, h, 1);
-    if (flip) sprite.material.rotation = Math.PI;
-    sprite.castShadow = true;
-    return sprite;
+  function makeBottleMesh(key, w, h, flip = false) {
+    const group = new THREE.Group();
+    const tex = textures[key] && !textures[key].broken ? textures[key] : null;
+    const bodyH = h * 0.68;
+
+    const glass = new THREE.Mesh(
+      new THREE.CylinderGeometry(w * 0.34, w * 0.4, bodyH, 18),
+      new THREE.MeshStandardMaterial({
+        color: 0x9ec89a,
+        transparent: true,
+        opacity: 0.45,
+        roughness: 0.12,
+        metalness: 0.08,
+      })
+    );
+    glass.position.y = bodyH / 2;
+    glass.castShadow = true;
+    group.add(glass);
+
+    const label = new THREE.Mesh(
+      new THREE.PlaneGeometry(w * 0.82, h * 0.72),
+      new THREE.MeshStandardMaterial({
+        map: tex,
+        color: tex ? 0xffffff : 0xc8102e,
+        transparent: true,
+        roughness: 0.55,
+        side: THREE.DoubleSide,
+      })
+    );
+    label.position.set(0, bodyH * 0.52, w * 0.36);
+    label.castShadow = true;
+    group.add(label);
+
+    const cap = new THREE.Mesh(
+      new THREE.CylinderGeometry(w * 0.13, w * 0.13, h * 0.1, 12),
+      new THREE.MeshStandardMaterial({ color: 0xc8102e, metalness: 0.55, roughness: 0.3 })
+    );
+    cap.position.y = bodyH + h * 0.05;
+    cap.castShadow = true;
+    group.add(cap);
+
+    const base = new THREE.Mesh(
+      new THREE.CylinderGeometry(w * 0.42, w * 0.42, h * 0.07, 16),
+      new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.65, roughness: 0.35 })
+    );
+    base.position.y = h * 0.035;
+    group.add(base);
+
+    if (flip) group.rotation.x = Math.PI;
+    return group;
   }
 
   function makeBulletMesh(radius, color, emissive) {
@@ -134,9 +171,9 @@
     return { x, y: elev, z: gy };
   }
 
-  function syncSprite(sprite, x, gy, elev = 12) {
+  function syncEntity(mesh, x, gy, elev = 12, zOffset = 0) {
     const p = gameToWorld(x, gy, elev);
-    sprite.position.set(p.x, p.y, p.z);
+    mesh.position.set(p.x, p.y, p.z + zOffset);
   }
 
   // ---------- Audio ----------
@@ -238,12 +275,13 @@
       for (let c = 0; c < cols; c++) {
         const x = startX + c * (cellW + gapX) + (cellW - ew) / 2;
         const y = startY + r * (eh + gapY);
-        const mesh = makeBottleSprite(row.key, ew, eh, true);
-        syncSprite(mesh, x + ew / 2, y + eh / 2, 14);
+        const mesh = makeBottleMesh(row.key, ew, eh, true);
+        syncEntity(mesh, x + ew / 2, y + eh / 2, 14, r * 6);
         scene.add(mesh);
         enemies.push({
           x, y, w: ew, h: eh, col: c,
           key: row.key, points: row.points, alive: true, mesh,
+          rowDepth: r * 6,
         });
       }
     });
@@ -285,10 +323,10 @@
 
   function ensurePlayerMesh() {
     if (!player.mesh) {
-      player.mesh = makeBottleSprite('lisa', player.w, player.h, false);
+      player.mesh = makeBottleMesh('lisa', player.w, player.h, false);
       scene.add(player.mesh);
     }
-    syncSprite(player.mesh, player.x + player.w / 2, player.y + player.h / 2, 16);
+    syncEntity(player.mesh, player.x + player.w / 2, player.y + player.h / 2, 18);
     player.mesh.visible = player.invincible <= 0 || Math.floor(player.invincible * 10) % 2 === 0;
   }
 
@@ -421,14 +459,14 @@
     alive.forEach(e => {
       e.x += vx * dt;
       if (e.x < 8 || e.x + e.w > W - 8) hitEdge = true;
-      syncSprite(e.mesh, e.x + e.w / 2, e.y + e.h / 2, 14);
+      syncEntity(e.mesh, e.x + e.w / 2, e.y + e.h / 2, 14, (e.rowDepth || 0));
     });
     if (hitEdge) {
       enemyDir *= -1;
       alive.forEach(e => {
         e.y += enemyDrop;
         e.x += enemyDir * 2;
-        syncSprite(e.mesh, e.x + e.w / 2, e.y + e.h / 2, 14);
+        syncEntity(e.mesh, e.x + e.w / 2, e.y + e.h / 2, 14, (e.rowDepth || 0));
       });
     }
 
@@ -645,9 +683,10 @@
   }
 
   function render() {
-    const t = performance.now() * 0.0003;
-    camera.position.x = W / 2 + Math.sin(t) * 12;
-    camera.lookAt(W / 2, 0, H / 2);
+    const t = performance.now() * 0.00025;
+    camera.position.x = W / 2 + Math.sin(t) * 18;
+    camera.position.z = H + 560 + Math.cos(t * 0.7) * 10;
+    camera.lookAt(W / 2, 0, H * 0.42);
     renderer.render(scene, camera);
     drawHud();
   }
