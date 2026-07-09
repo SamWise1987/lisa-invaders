@@ -1,11 +1,78 @@
 /* ============================================================
-   LISA INVADERS — Birra del Borgo vs le lager industriali
+   LISA INVADERS 3D — Birra del Borgo vs le lager industriali
+   Three.js rendering + game-state scoring module
    ============================================================ */
 (() => {
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width;
-  const H = canvas.height;
+  const GS = window.GameState;
+  const W = 900;
+  const H = 640;
+
+  const container = document.getElementById('game-container');
+  const hudCanvas = document.getElementById('hud-overlay');
+  const hudCtx = hudCanvas.getContext('2d');
+
+  // ---------- Three.js setup ----------
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0f2a);
+  scene.fog = new THREE.Fog(0x0a0f2a, 500, 1400);
+
+  const camera = new THREE.PerspectiveCamera(48, W / H, 1, 2500);
+  camera.position.set(W * 0.5, 320, H * 0.5 + 420);
+  camera.lookAt(W * 0.5, 0, H * 0.5);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  container.appendChild(renderer.domElement);
+
+  const ambient = new THREE.AmbientLight(0x6d7fc4, 0.55);
+  scene.add(ambient);
+  const keyLight = new THREE.DirectionalLight(0xfff0d0, 1.1);
+  keyLight.position.set(W * 0.3, 500, H * 0.2);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.set(1024, 1024);
+  keyLight.shadow.camera.left = -W;
+  keyLight.shadow.camera.right = W * 2;
+  keyLight.shadow.camera.top = H;
+  keyLight.shadow.camera.bottom = -H;
+  scene.add(keyLight);
+  const rimLight = new THREE.DirectionalLight(0xc8102e, 0.35);
+  rimLight.position.set(W * 0.8, 200, H);
+  scene.add(rimLight);
+
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(W + 120, H + 120),
+    new THREE.MeshStandardMaterial({ color: 0x121a3d, roughness: 0.9, metalness: 0.1 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.set(W / 2, -2, H / 2);
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const grid = new THREE.GridHelper(Math.max(W, H), 24, 0x2a3568, 0x1a2248);
+  grid.position.set(W / 2, -1, H / 2);
+  scene.add(grid);
+
+  // Starfield
+  const starGeo = new THREE.BufferGeometry();
+  const starCount = 220;
+  const starPos = new Float32Array(starCount * 3);
+  const stars = [];
+  for (let i = 0; i < starCount; i++) {
+    const x = Math.random() * W;
+    const y = 80 + Math.random() * 400;
+    const z = Math.random() * H;
+    starPos[i * 3] = x;
+    starPos[i * 3 + 1] = y;
+    starPos[i * 3 + 2] = z;
+    stars.push({ tw: Math.random() * Math.PI * 2 });
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+  const starMat = new THREE.PointsMaterial({ color: 0xdfe6ff, size: 2.2, transparent: true, opacity: 0.85 });
+  const starField = new THREE.Points(starGeo, starMat);
+  scene.add(starField);
 
   // ---------- Assets ----------
   const IMAGES = {
@@ -15,35 +82,64 @@
     corona: 'assets/corona.png',
     tennents: 'assets/tennents.png',
   };
-  const sprites = {};
-  let assetsLoaded = 0;
-  const assetsTotal = Object.keys(IMAGES).length;
+  const textures = {};
+  const loader = new THREE.TextureLoader();
   for (const [key, src] of Object.entries(IMAGES)) {
-    const img = new Image();
-    img.src = src;
-    img.onload = () => { assetsLoaded++; };
-    img.onerror = () => { assetsLoaded++; sprites[key].broken = true; };
-    sprites[key] = img;
+    textures[key] = loader.load(src, undefined, undefined, () => {
+      textures[key].broken = true;
+    });
+    textures[key].colorSpace = THREE.SRGBColorSpace;
   }
 
-  // Proporzioni reali degli sprite (larghezza/altezza) per non deformarli
-  const ASPECT = {
-    lisa: 761 / 1120,
-    bud: 178 / 600,
-    becks: 155 / 600,
-    tennents: 278 / 600,
-    corona: 147 / 600,
-  };
+  function makeBottleSprite(key, w, h, flip = false) {
+    const tex = textures[key];
+    const mat = new THREE.SpriteMaterial({
+      map: tex && !tex.broken ? tex : null,
+      color: tex && !tex.broken ? 0xffffff : 0xc8102e,
+      transparent: true,
+      depthWrite: false,
+    });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(w, h, 1);
+    if (flip) sprite.material.rotation = Math.PI;
+    sprite.castShadow = true;
+    return sprite;
+  }
 
-  // Ordine righe (dall'alto): più in alto = più punti
-  const ENEMY_ROWS = [
-    { key: 'bud',      name: "Bud",       points: 40 },
-    { key: 'becks',    name: "Beck's",    points: 30 },
-    { key: 'tennents', name: "Tennent's", points: 20 },
-    { key: 'corona',   name: 'Corona',    points: 10 },
-  ];
+  function makeBulletMesh(radius, color, emissive) {
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(radius, 10, 10),
+      new THREE.MeshStandardMaterial({ color, emissive, roughness: 0.35, metalness: 0.2 })
+    );
+    mesh.castShadow = true;
+    return mesh;
+  }
 
-  // ---------- Audio (WebAudio, niente file) ----------
+  function makeBunkerBlock(w, h, hp) {
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(w - 0.5, 8, h - 0.5),
+      new THREE.MeshStandardMaterial({
+        color: hp === 2 ? 0xf7e8b0 : 0xc8b880,
+        roughness: 0.7,
+        transparent: hp < 2,
+        opacity: hp === 2 ? 1 : 0.55,
+      })
+    );
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    return mesh;
+  }
+
+  function gameToWorld(x, gy, elev = 0) {
+    return { x, y: elev, z: gy };
+  }
+
+  function syncSprite(sprite, x, gy, elev = 12) {
+    const p = gameToWorld(x, gy, elev);
+    sprite.position.set(p.x, p.y, p.z);
+  }
+
+  // ---------- Audio ----------
   const sound = {
     enabled: true,
     ctx: null,
@@ -81,29 +177,25 @@
     },
   };
 
-  // ---------- Stato ----------
-  const STATE = { START: 0, PLAYING: 1, LEVELUP: 2, GAMEOVER: 3, WIN_PAUSE: 4 };
-  let state = STATE.START;
+  // ---------- Game state ----------
+  let state = GS.STATE.START;
   let paused = false;
-
-  let score = 0;
-  let highScore = +(localStorage.getItem('lisaInvadersHigh') || 0);
-  let lives = 3;
-  let level = 1;
+  let session = GS.createSession();
   let levelBannerT = 0;
 
   const player = {
-    w: Math.round(88 * ASPECT.lisa), h: 88,
-    x: W / 2 - Math.round(88 * ASPECT.lisa) / 2, y: H - 106,
+    w: Math.round(88 * GS.ASPECT.lisa), h: 88,
+    x: W / 2 - Math.round(88 * GS.ASPECT.lisa) / 2, y: H - 106,
     speed: 360,
     cooldown: 0,
     invincible: 0,
+    mesh: null,
   };
 
   let enemies = [];
   let enemyDir = 1;
   let enemySpeed = 0;
-  let enemyDrop = 22;
+  const enemyDrop = 22;
   let marchStep = 0;
   let marchTimer = 0;
   let enemyFireTimer = 0;
@@ -112,43 +204,57 @@
   let enemyBullets = [];
   let particles = [];
   let bunkers = [];
-  let stars = [];
-
-  for (let i = 0; i < 90; i++) {
-    stars.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.6 + 0.4, tw: Math.random() * Math.PI * 2 });
-  }
 
   const keys = {};
+  const interactEl = container;
 
-  // ---------- Onda nemica ----------
-  function spawnWave() {
+  function clearSceneEntities() {
+    [...playerBullets, ...enemyBullets, ...particles, ...bunkers, ...enemies].forEach(e => {
+      if (e.mesh) scene.remove(e.mesh);
+    });
+    playerBullets = [];
+    enemyBullets = [];
+    particles = [];
+    bunkers = [];
     enemies = [];
-    const cols = Math.min(7 + Math.floor((level - 1) / 2), 9);
+    if (player.mesh) {
+      scene.remove(player.mesh);
+      player.mesh = null;
+    }
+  }
+
+  function spawnWave() {
+    enemies.forEach(e => { if (e.mesh) scene.remove(e.mesh); });
+    enemies = [];
+    const cfg = GS.getLevelConfig(session.level);
+    const cols = cfg.columns;
     const cellW = 46, eh = 68;
     const gapX = 30, gapY = 16;
     const totalW = cols * cellW + (cols - 1) * gapX;
     const startX = (W - totalW) / 2;
     const startY = 84;
-    ENEMY_ROWS.forEach((row, r) => {
-      // larghezza reale in base alle proporzioni dello sprite, centrata nella cella
-      const ew = Math.round(eh * ASPECT[row.key]);
+    GS.ENEMY_ROWS.forEach((row, r) => {
+      const ew = Math.round(eh * GS.ASPECT[row.key]);
       for (let c = 0; c < cols; c++) {
+        const x = startX + c * (cellW + gapX) + (cellW - ew) / 2;
+        const y = startY + r * (eh + gapY);
+        const mesh = makeBottleSprite(row.key, ew, eh, true);
+        syncSprite(mesh, x + ew / 2, y + eh / 2, 14);
+        scene.add(mesh);
         enemies.push({
-          x: startX + c * (cellW + gapX) + (cellW - ew) / 2,
-          y: startY + r * (eh + gapY),
-          w: ew, h: eh,
-          col: c,
-          key: row.key, points: row.points, alive: true,
+          x, y, w: ew, h: eh, col: c,
+          key: row.key, points: row.points, alive: true, mesh,
         });
       }
     });
     enemyDir = 1;
-    enemySpeed = 22 + (level - 1) * 9;
+    enemySpeed = cfg.enemySpeed;
     enemyFireTimer = 1.5;
     marchTimer = 0;
   }
 
   function buildBunkers() {
+    bunkers.forEach(b => { if (b.mesh) scene.remove(b.mesh); });
     bunkers = [];
     const bw = 10, bh = 10;
     const shape = [
@@ -164,103 +270,150 @@
       shape.forEach((rowStr, ry) => {
         [...rowStr].forEach((ch, rx) => {
           if (ch === '#') {
-            bunkers.push({ x: px + rx * bw, y: H - 210 + ry * bh, w: bw, h: bh, hp: 2 });
+            const x = px + rx * bw;
+            const y = H - 210 + ry * bh;
+            const mesh = makeBunkerBlock(bw, bh, 2);
+            const p = gameToWorld(x + bw / 2, y + bh / 2, 4);
+            mesh.position.set(p.x, p.y, p.z);
+            scene.add(mesh);
+            bunkers.push({ x, y, w: bw, h: bh, hp: 2, mesh });
           }
         });
       });
     });
   }
 
+  function ensurePlayerMesh() {
+    if (!player.mesh) {
+      player.mesh = makeBottleSprite('lisa', player.w, player.h, false);
+      scene.add(player.mesh);
+    }
+    syncSprite(player.mesh, player.x + player.w / 2, player.y + player.h / 2, 16);
+    player.mesh.visible = player.invincible <= 0 || Math.floor(player.invincible * 10) % 2 === 0;
+  }
+
   function resetGame() {
-    score = 0;
-    lives = 3;
-    level = 1;
+    session = GS.resetSession();
     playerBullets = [];
     enemyBullets = [];
     particles = [];
+    clearSceneEntities();
     player.x = W / 2 - player.w / 2;
     player.invincible = 0;
+    player.cooldown = 0;
     paused = false;
     spawnWave();
     buildBunkers();
-    state = STATE.PLAYING;
+    ensurePlayerMesh();
+    state = GS.STATE.PLAYING;
     updatePauseBtn();
   }
 
   function nextLevel() {
-    level++;
+    session = GS.advanceLevel(session);
+    playerBullets.forEach(b => { if (b.mesh) scene.remove(b.mesh); });
+    enemyBullets.forEach(b => { if (b.mesh) scene.remove(b.mesh); });
     playerBullets = [];
     enemyBullets = [];
     spawnWave();
     buildBunkers();
     levelBannerT = 2;
-    state = STATE.LEVELUP;
+    state = GS.STATE.LEVELUP;
     sound.levelUp();
   }
 
-  // ---------- Particelle (schiuma!) ----------
-  function foamExplosion(x, y, baseColor = '#f7e8b0', n = 22) {
+  function foamExplosion(x, y, baseColor = 0xf7e8b0, n = 22) {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
       const sp = 40 + Math.random() * 160;
+      const r = 2 + Math.random() * 4;
+      const color = Math.random() < 0.7 ? baseColor : 0xc8102e;
+      const mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(r, 6, 6),
+        new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 })
+      );
+      const p = gameToWorld(x, y, 10 + Math.random() * 20);
+      mesh.position.set(p.x, p.y, p.z);
+      scene.add(mesh);
       particles.push({
-        x, y,
+        x, y, z: p.z,
         vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40,
-        r: 2 + Math.random() * 4,
-        life: 0.5 + Math.random() * 0.5,
-        t: 0,
-        color: Math.random() < 0.7 ? baseColor : '#c8102e',
+        r, life: 0.5 + Math.random() * 0.5, t: 0, mesh,
       });
     }
   }
 
-  // ---------- Sparo ----------
   function firePlayer() {
     if (player.cooldown > 0) return;
     player.cooldown = 0.34;
-    playerBullets.push({ x: player.x + player.w / 2, y: player.y - 6, vy: -540, r: 5 });
+    const bx = player.x + player.w / 2;
+    const by = player.y - 6;
+    const mesh = makeBulletMesh(5, 0xf5edd8, 0xc8102e);
+    const p = gameToWorld(bx, by, 18);
+    mesh.position.set(p.x, p.y, p.z);
+    scene.add(mesh);
+    playerBullets.push({ x: bx, y: by, vy: -540, r: 5, mesh });
     sound.shoot();
   }
 
   function fireEnemy() {
     const alive = enemies.filter(e => e.alive);
     if (!alive.length) return;
-    // spara dal fondo di una colonna casuale
     const byCol = {};
     alive.forEach(e => {
       if (!byCol[e.col] || e.y > byCol[e.col].y) byCol[e.col] = e;
     });
     const shooters = Object.values(byCol);
     const s = shooters[(Math.random() * shooters.length) | 0];
-    enemyBullets.push({ x: s.x + s.w / 2, y: s.y + s.h, vy: 150 + level * 22, r: 5 });
+    const bx = s.x + s.w / 2;
+    const by = s.y + s.h;
+    const cfg = GS.getLevelConfig(session.level);
+    const mesh = makeBulletMesh(5, 0xe8a020, 0x804000);
+    const p = gameToWorld(bx, by, 16);
+    mesh.position.set(p.x, p.y, p.z);
+    scene.add(mesh);
+    enemyBullets.push({ x: bx, y: by, vy: cfg.enemyBulletSpeed, r: 5, mesh });
     sound.enemyShoot();
   }
 
-  // ---------- Collisioni ----------
   function rectHit(bx, by, br, r) {
     return bx > r.x - br && bx < r.x + r.w + br && by > r.y - br && by < r.y + r.h + br;
   }
 
-  // ---------- Update ----------
-  function update(dt) {
-    stars.forEach(s => { s.tw += dt * 2; });
-
-    if (state === STATE.LEVELUP) {
-      levelBannerT -= dt;
-      if (levelBannerT <= 0) state = STATE.PLAYING;
+  function updateBunkerVisual(blk) {
+    if (blk.hp <= 0) {
+      scene.remove(blk.mesh);
+      blk.mesh = null;
       return;
     }
-    if (state !== STATE.PLAYING || paused) return;
+    blk.mesh.material.color.setHex(blk.hp === 2 ? 0xf7e8b0 : 0xc8b880);
+    blk.mesh.material.opacity = blk.hp === 2 ? 1 : 0.55;
+    blk.mesh.material.transparent = blk.hp < 2;
+  }
 
-    // Player
+  function update(dt) {
+    stars.forEach(s => { s.tw += dt * 2; });
+    starMat.opacity = 0.55 + 0.3 * Math.abs(Math.sin(performance.now() * 0.001));
+
+    if (state === GS.STATE.LEVELUP) {
+      levelBannerT -= dt;
+      if (levelBannerT <= 0) state = GS.STATE.PLAYING;
+      ensurePlayerMesh();
+      return;
+    }
+    if (state !== GS.STATE.PLAYING || paused) {
+      if (state === GS.STATE.PLAYING) ensurePlayerMesh();
+      return;
+    }
+
     if (keys['ArrowLeft'] || keys['a']) player.x -= player.speed * dt;
     if (keys['ArrowRight'] || keys['d']) player.x += player.speed * dt;
     player.x = Math.max(8, Math.min(W - player.w - 8, player.x));
     player.cooldown -= dt;
     if (player.invincible > 0) player.invincible -= dt;
     if (keys[' ']) firePlayer();
+    ensurePlayerMesh();
 
-    // Marcia nemici
     const alive = enemies.filter(e => e.alive);
     const speedScale = 1 + (1 - alive.length / (enemies.length || 1)) * 2.2;
     const vx = enemySpeed * speedScale * enemyDir;
@@ -268,13 +421,17 @@
     alive.forEach(e => {
       e.x += vx * dt;
       if (e.x < 8 || e.x + e.w > W - 8) hitEdge = true;
+      syncSprite(e.mesh, e.x + e.w / 2, e.y + e.h / 2, 14);
     });
     if (hitEdge) {
       enemyDir *= -1;
-      alive.forEach(e => { e.y += enemyDrop; e.x += enemyDir * 2; });
+      alive.forEach(e => {
+        e.y += enemyDrop;
+        e.x += enemyDir * 2;
+        syncSprite(e.mesh, e.x + e.w / 2, e.y + e.h / 2, 14);
+      });
     }
 
-    // Suono marcia
     marchTimer -= dt;
     if (marchTimer <= 0 && alive.length) {
       marchTimer = Math.max(0.12, 0.7 / speedScale);
@@ -282,82 +439,100 @@
       marchStep = (marchStep + 1) % 4;
     }
 
-    // I nemici raggiungono la base → game over
     if (alive.some(e => e.y + e.h >= player.y - 4)) {
       gameOver();
       return;
     }
 
-    // Fuoco nemico
+    const cfg = GS.getLevelConfig(session.level);
     enemyFireTimer -= dt;
     if (enemyFireTimer <= 0) {
       fireEnemy();
-      enemyFireTimer = Math.max(0.25, 1.15 - level * 0.08) * (0.6 + Math.random() * 0.8);
+      enemyFireTimer = cfg.enemyFireInterval * (0.6 + Math.random() * 0.8);
     }
 
-    // Proiettili giocatore
     playerBullets = playerBullets.filter(b => {
       b.y += b.vy * dt;
-      if (b.y < -10) return false;
+      const p = gameToWorld(b.x, b.y, 18);
+      b.mesh.position.set(p.x, p.y, p.z);
+      if (b.y < -10) {
+        scene.remove(b.mesh);
+        return false;
+      }
       for (const e of enemies) {
         if (e.alive && rectHit(b.x, b.y, b.r, e)) {
           e.alive = false;
-          score += e.points;
-          if (score > highScore) {
-            highScore = score;
-            localStorage.setItem('lisaInvadersHigh', highScore);
-          }
+          scene.remove(e.mesh);
+          e.mesh = null;
+          const result = GS.awardPoints(session, e.key);
+          session = result.session;
           foamExplosion(e.x + e.w / 2, e.y + e.h / 2);
           sound.boom();
+          scene.remove(b.mesh);
           return false;
         }
       }
       for (const blk of bunkers) {
         if (blk.hp > 0 && rectHit(b.x, b.y, b.r, blk)) {
           blk.hp--;
-          foamExplosion(b.x, b.y, '#8fa0e0', 6);
+          updateBunkerVisual(blk);
+          foamExplosion(b.x, b.y, 0x8fa0e0, 6);
+          scene.remove(b.mesh);
           return false;
         }
       }
       return true;
     });
 
-    // Proiettili nemici
     enemyBullets = enemyBullets.filter(b => {
       b.y += b.vy * dt;
-      if (b.y > H + 10) return false;
+      const p = gameToWorld(b.x, b.y, 16);
+      b.mesh.position.set(p.x, p.y, p.z);
+      if (b.y > H + 10) {
+        scene.remove(b.mesh);
+        return false;
+      }
       for (const blk of bunkers) {
         if (blk.hp > 0 && rectHit(b.x, b.y, b.r, blk)) {
           blk.hp--;
-          foamExplosion(b.x, b.y, '#8fa0e0', 6);
+          updateBunkerVisual(blk);
+          foamExplosion(b.x, b.y, 0x8fa0e0, 6);
+          scene.remove(b.mesh);
           return false;
         }
       }
       if (player.invincible <= 0 && rectHit(b.x, b.y, b.r, player)) {
         playerHit();
+        scene.remove(b.mesh);
         return false;
       }
       return true;
     });
 
-    // Particelle
     particles = particles.filter(p => {
       p.t += dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.vy += 220 * dt;
-      return p.t < p.life;
+      const wp = gameToWorld(p.x, p.y, 10 + (1 - p.t / p.life) * 30);
+      p.mesh.position.set(wp.x, wp.y, wp.z);
+      p.mesh.material.opacity = 1 - p.t / p.life;
+      if (p.t >= p.life) {
+        scene.remove(p.mesh);
+        return false;
+      }
+      return true;
     });
 
-    // Onda completata
     if (!enemies.some(e => e.alive)) nextLevel();
   }
 
   function playerHit() {
-    lives--;
+    const result = GS.loseLife(session);
+    session = result.session;
     sound.playerHit();
-    foamExplosion(player.x + player.w / 2, player.y + player.h / 2, '#c8102e', 34);
-    if (lives <= 0) {
+    foamExplosion(player.x + player.w / 2, player.y + player.h / 2, 0xc8102e, 34);
+    if (result.gameOver) {
       gameOver();
     } else {
       player.invincible = 2;
@@ -366,181 +541,123 @@
   }
 
   function gameOver() {
-    state = STATE.GAMEOVER;
+    state = GS.STATE.GAMEOVER;
     sound.gameOver();
   }
 
-  // ---------- Render ----------
-  function drawBottle(key, x, y, w, h, flip = false) {
-    const img = sprites[key];
+  // ---------- HUD overlay (2D) ----------
+  function drawHudSprite(key, x, y, w, h, flip = false) {
+    const img = textures[key]?.image;
     if (img && img.complete && img.naturalWidth) {
-      // adatta lo sprite nel box senza deformarlo
       const scale = Math.min(w / img.naturalWidth, h / img.naturalHeight);
       const dw = img.naturalWidth * scale;
       const dh = img.naturalHeight * scale;
       const dx = x + (w - dw) / 2;
       const dy = y + (h - dh) / 2;
-      ctx.save();
+      hudCtx.save();
       if (flip) {
-        ctx.translate(dx + dw / 2, dy + dh / 2);
-        ctx.rotate(Math.PI);
-        ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+        hudCtx.translate(dx + dw / 2, dy + dh / 2);
+        hudCtx.rotate(Math.PI);
+        hudCtx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
       } else {
-        ctx.drawImage(img, dx, dy, dw, dh);
+        hudCtx.drawImage(img, dx, dy, dw, dh);
       }
-      ctx.restore();
+      hudCtx.restore();
     } else {
-      ctx.fillStyle = '#c8102e';
-      ctx.fillRect(x, y, w, h);
+      hudCtx.fillStyle = '#c8102e';
+      hudCtx.fillRect(x, y, w, h);
     }
   }
 
-  function draw() {
-    ctx.clearRect(0, 0, W, H);
-
-    // Stelle
-    stars.forEach(s => {
-      ctx.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(s.tw));
-      ctx.fillStyle = '#dfe6ff';
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fill();
+  function overlay(title, sub, dark) {
+    hudCtx.fillStyle = dark ? 'rgba(9,13,36,.82)' : 'rgba(9,13,36,.6)';
+    hudCtx.fillRect(0, 0, W, H);
+    hudCtx.textAlign = 'center';
+    hudCtx.fillStyle = '#f5edd8';
+    hudCtx.font = 'bold 52px "Courier New", monospace';
+    hudCtx.shadowColor = '#c8102e';
+    hudCtx.shadowBlur = 18;
+    hudCtx.fillText(title, W / 2, H / 2 - 20);
+    hudCtx.shadowBlur = 0;
+    hudCtx.font = '18px "Courier New", monospace';
+    hudCtx.fillStyle = '#8fa0e0';
+    sub.split('\n').forEach((line, i) => {
+      hudCtx.fillText(line, W / 2, H / 2 + 24 + i * 28);
     });
-    ctx.globalAlpha = 1;
+  }
 
-    // HUD in alto
-    ctx.fillStyle = '#f5edd8';
-    ctx.font = 'bold 16px "Courier New", monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(`PUNTI: ${score}`, 16, 28);
-    ctx.textAlign = 'center';
-    ctx.fillText(`RECORD: ${highScore}`, W / 2, 28);
-    ctx.textAlign = 'right';
-    ctx.fillText(`LIVELLO ${level}`, W - 16, 28);
-    // Vite (bottigliette)
-    for (let i = 0; i < lives; i++) {
-      drawBottle('lisa', 16 + i * 22, 40, 16, 28);
+  function drawStartScreen() {
+    hudCtx.textAlign = 'center';
+    drawHudSprite('lisa', W / 2 - 45, 120, 90, 152);
+    hudCtx.fillStyle = '#f5edd8';
+    hudCtx.font = 'bold 44px "Courier New", monospace';
+    hudCtx.shadowColor = '#c8102e';
+    hudCtx.shadowBlur = 16;
+    hudCtx.fillText('LISA INVADERS 3D', W / 2, 330);
+    hudCtx.shadowBlur = 0;
+    hudCtx.font = '16px "Courier New", monospace';
+    hudCtx.fillStyle = '#8fa0e0';
+    GS.ENEMY_ROWS.forEach((r, i) => {
+      const y = 370 + i * 52;
+      drawHudSprite(r.key, W / 2 - 110, y - 24, 28, 42, true);
+      hudCtx.textAlign = 'left';
+      hudCtx.fillText(`${r.name}  =  ${r.points} punti`, W / 2 - 65, y);
+    });
+    hudCtx.textAlign = 'center';
+    hudCtx.fillStyle = '#f5edd8';
+    hudCtx.font = 'bold 20px "Courier New", monospace';
+    if (Math.floor(performance.now() / 500) % 2 === 0) {
+      hudCtx.fillText('PREMI SPAZIO O TOCCA PER INIZIARE', W / 2, H - 32);
     }
-    ctx.strokeStyle = 'rgba(200,16,46,.5)';
-    ctx.beginPath();
-    ctx.moveTo(0, 74); ctx.lineTo(W, 74);
-    ctx.stroke();
+  }
 
-    if (state === STATE.START) {
+  function drawHud() {
+    hudCtx.clearRect(0, 0, W, H);
+    hudCtx.fillStyle = '#f5edd8';
+    hudCtx.font = 'bold 16px "Courier New", monospace';
+    hudCtx.textAlign = 'left';
+    hudCtx.fillText(`PUNTI: ${session.score}`, 16, 28);
+    hudCtx.textAlign = 'center';
+    hudCtx.fillText(`RECORD: ${session.highScore}`, W / 2, 28);
+    hudCtx.textAlign = 'right';
+    hudCtx.fillText(`LIVELLO ${session.level}`, W - 16, 28);
+    for (let i = 0; i < session.lives; i++) {
+      drawHudSprite('lisa', 16 + i * 22, 40, 16, 28);
+    }
+    hudCtx.strokeStyle = 'rgba(200,16,46,.5)';
+    hudCtx.beginPath();
+    hudCtx.moveTo(0, 74);
+    hudCtx.lineTo(W, 74);
+    hudCtx.stroke();
+
+    if (state === GS.STATE.START) {
       drawStartScreen();
       return;
     }
-
-    // Bunker (fusti di schiuma)
-    bunkers.forEach(b => {
-      if (b.hp <= 0) return;
-      ctx.fillStyle = b.hp === 2 ? '#f7e8b0' : 'rgba(247,232,176,.45)';
-      ctx.fillRect(b.x, b.y, b.w - 1, b.h - 1);
-    });
-
-    // Nemici (bottiglie capovolte)
-    enemies.forEach(e => {
-      if (e.alive) drawBottle(e.key, e.x, e.y, e.w, e.h, true);
-    });
-
-    // Player Lisa (lampeggia se invincibile)
-    if (player.invincible <= 0 || Math.floor(player.invincible * 10) % 2 === 0) {
-      drawBottle('lisa', player.x, player.y, player.w, player.h);
-    }
-
-    // Proiettili giocatore: tappi
-    playerBullets.forEach(b => {
-      ctx.fillStyle = '#f5edd8';
-      ctx.strokeStyle = '#c8102e';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    });
-
-    // Proiettili nemici: gocce
-    enemyBullets.forEach(b => {
-      ctx.fillStyle = '#e8a020';
-      ctx.beginPath();
-      ctx.moveTo(b.x, b.y - 8);
-      ctx.quadraticCurveTo(b.x + 6, b.y, b.x, b.y + 5);
-      ctx.quadraticCurveTo(b.x - 6, b.y, b.x, b.y - 8);
-      ctx.fill();
-    });
-
-    // Particelle
-    particles.forEach(p => {
-      ctx.globalAlpha = 1 - p.t / p.life;
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    ctx.globalAlpha = 1;
-
-    if (state === STATE.LEVELUP) {
-      overlay(`LIVELLO ${level}`, 'Le lager tornano più cattive…', false);
-    } else if (state === STATE.GAMEOVER) {
-      overlay('GAME OVER', `Punteggio: ${score}${score >= highScore && score > 0 ? '  ★ NUOVO RECORD!' : ''}\nPremi R o RIAVVIA per riprovare`, true);
+    if (state === GS.STATE.LEVELUP) {
+      overlay(`LIVELLO ${session.level}`, 'Le lager tornano più cattive…', false);
+    } else if (state === GS.STATE.GAMEOVER) {
+      const msg = GS.gameOverMessage(session.score, session.highScore);
+      overlay(msg.title, `${msg.subtitle}\nPremi R o RIAVVIA per riprovare`, true);
     } else if (paused) {
       overlay('PAUSA', 'Premi P per riprendere', false);
     }
   }
 
-  function overlay(title, sub, dark) {
-    ctx.fillStyle = dark ? 'rgba(9,13,36,.82)' : 'rgba(9,13,36,.6)';
-    ctx.fillRect(0, 0, W, H);
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#f5edd8';
-    ctx.font = 'bold 52px "Courier New", monospace';
-    ctx.shadowColor = '#c8102e';
-    ctx.shadowBlur = 18;
-    ctx.fillText(title, W / 2, H / 2 - 20);
-    ctx.shadowBlur = 0;
-    ctx.font = '18px "Courier New", monospace';
-    ctx.fillStyle = '#8fa0e0';
-    sub.split('\n').forEach((line, i) => {
-      ctx.fillText(line, W / 2, H / 2 + 24 + i * 28);
-    });
-  }
-
-  function drawStartScreen() {
-    ctx.textAlign = 'center';
-    // Lisa al centro
-    drawBottle('lisa', W / 2 - 45, 120, 90, 152);
-    ctx.fillStyle = '#f5edd8';
-    ctx.font = 'bold 44px "Courier New", monospace';
-    ctx.shadowColor = '#c8102e';
-    ctx.shadowBlur = 16;
-    ctx.fillText('LISA INVADERS', W / 2, 330);
-    ctx.shadowBlur = 0;
-
-    // I 4 invasori con punteggi
-    ctx.font = '16px "Courier New", monospace';
-    ctx.fillStyle = '#8fa0e0';
-    const rows = [...ENEMY_ROWS];
-    rows.forEach((r, i) => {
-      const y = 370 + i * 52;
-      drawBottle(r.key, W / 2 - 110, y - 24, 28, 42, true);
-      ctx.textAlign = 'left';
-      ctx.fillText(`${r.name}  =  ${r.points} punti`, W / 2 - 65, y);
-    });
-
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#f5edd8';
-    ctx.font = 'bold 20px "Courier New", monospace';
-    const blink = Math.floor(performance.now() / 500) % 2 === 0;
-    if (blink) ctx.fillText('PREMI SPAZIO O TOCCA PER INIZIARE', W / 2, H - 32);
+  function render() {
+    const t = performance.now() * 0.0003;
+    camera.position.x = W / 2 + Math.sin(t) * 12;
+    camera.lookAt(W / 2, 0, H / 2);
+    renderer.render(scene, camera);
+    drawHud();
   }
 
   // ---------- Input ----------
   window.addEventListener('keydown', e => {
     if ([' ', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
     keys[e.key.length === 1 ? e.key.toLowerCase() : e.key] = true;
-
-    if (e.key === ' ' && state === STATE.START) { resetGame(); return; }
-    if ((e.key === 'r' || e.key === 'R') && state !== STATE.START) resetGame();
+    if (e.key === ' ' && state === GS.STATE.START) { resetGame(); return; }
+    if ((e.key === 'r' || e.key === 'R') && state !== GS.STATE.START) resetGame();
     if (e.key === 'p' || e.key === 'P') togglePause();
     if (e.key === 'm' || e.key === 'M') toggleSound();
   });
@@ -548,13 +665,12 @@
     keys[e.key.length === 1 ? e.key.toLowerCase() : e.key] = false;
   });
 
-  // Touch / pointer: touch = trascina + spara; mouse = clic spara, trascina per muovere
   let dragging = false;
   let activePointerId = null;
   const isTouchPointer = e => e.pointerType === 'touch' || e.pointerType === 'pen';
 
   function canvasXFromEvent(e) {
-    const rect = canvas.getBoundingClientRect();
+    const rect = interactEl.getBoundingClientRect();
     return (e.clientX - rect.left) * (W / rect.width);
   }
 
@@ -567,11 +683,11 @@
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     if (isTouchPointer(e)) e.preventDefault();
     sound.ensure();
-    if (state === STATE.START) { resetGame(); return; }
-    if (state === STATE.GAMEOVER) { resetGame(); return; }
+    if (state === GS.STATE.START) { resetGame(); return; }
+    if (state === GS.STATE.GAMEOVER) { resetGame(); return; }
     dragging = true;
     activePointerId = e.pointerId;
-    canvas.setPointerCapture(e.pointerId);
+    interactEl.setPointerCapture(e.pointerId);
     if (isTouchPointer(e)) {
       movePlayerToPointer(e);
       firePlayer();
@@ -581,7 +697,7 @@
   }
 
   function onPointerMove(e) {
-    if (!dragging || activePointerId !== e.pointerId || state !== STATE.PLAYING) return;
+    if (!dragging || activePointerId !== e.pointerId || state !== GS.STATE.PLAYING) return;
     if (isTouchPointer(e)) e.preventDefault();
     movePlayerToPointer(e);
   }
@@ -591,20 +707,17 @@
     if (isTouchPointer(e)) e.preventDefault();
     dragging = false;
     activePointerId = null;
-    if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+    if (interactEl.hasPointerCapture(e.pointerId)) interactEl.releasePointerCapture(e.pointerId);
   }
 
-  canvas.addEventListener('pointerdown', onPointerDown);
-  canvas.addEventListener('pointermove', onPointerMove);
-  canvas.addEventListener('pointerup', onPointerUp);
-  canvas.addEventListener('pointercancel', onPointerUp);
-  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  interactEl.addEventListener('pointerdown', onPointerDown);
+  interactEl.addEventListener('pointermove', onPointerMove);
+  interactEl.addEventListener('pointerup', onPointerUp);
+  interactEl.addEventListener('pointercancel', onPointerUp);
+  interactEl.addEventListener('contextmenu', e => e.preventDefault());
+  interactEl.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+  interactEl.addEventListener('touchmove', e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
 
-  // Blocca scroll/zoom su touch legacy (Safari)
-  canvas.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
-  canvas.addEventListener('touchmove', e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
-
-  // Bottoni
   const btnSound = document.getElementById('btn-sound');
   const btnPause = document.getElementById('btn-pause');
   const btnRestart = document.getElementById('btn-restart');
@@ -615,7 +728,7 @@
     if (sound.enabled) sound.ensure();
   }
   function togglePause() {
-    if (state !== STATE.PLAYING) return;
+    if (state !== GS.STATE.PLAYING) return;
     paused = !paused;
     updatePauseBtn();
   }
@@ -632,7 +745,7 @@
     const dt = Math.min(0.033, (now - last) / 1000);
     last = now;
     update(dt);
-    draw();
+    render();
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
