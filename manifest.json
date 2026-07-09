@@ -1,0 +1,19 @@
+{
+  "name": "Lisa Invaders",
+  "short_name": "Lisa Invaders",
+  "description": "La lager italiana contro l'invasione industriale — gioco arcade Birra del Borgo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#10173a",
+  "theme_color": "#10173a",
+  "orientation": "any",
+  "lang": "it",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

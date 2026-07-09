@@ -7,6 +7,15 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#10173a">
+<meta name="description" content="Lisa Invaders — difendi la lager artigianale italiana da Bud, Beck's, Corona e Tennent's! Gioco arcade gratis.">
+<meta property="og:title" content="Lisa Invaders — Birra del Borgo">
+<meta property="og:description" content="La lager italiana contro l'invasione industriale. Gioca gratis nel browser!">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lisa-invaders.vercel.app">
+<meta property="og:image" content="https://lisa-invaders.vercel.app/icon.svg">
+<meta name="twitter:card" content="summary">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>LISA INVADERS — Birra del Borgo</title>
 <style>
   :root {
@@ -70,6 +79,20 @@
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
+  }
+  #btn-fire {
+    display: none;
+    background: var(--bdb-red);
+    color: #fff;
+    font-weight: bold;
+    font-size: 16px;
+    letter-spacing: 2px;
+    min-width: 120px;
+    box-shadow: 0 0 16px rgba(200,16,46,.5);
+  }
+  #btn-fire:active { transform: scale(0.96); }
+  @media (pointer: coarse) {
+    #btn-fire { display: inline-flex; align-items: center; justify-content: center; }
   }
   #hud {
     display: flex;
@@ -153,6 +176,7 @@
     <canvas id="game" width="900" height="640"></canvas>
   </div>
   <div id="hud">
+    <button id="btn-fire">🔫 SPARA</button>
     <button id="btn-sound">🔊 SUONO: ON</button>
     <button id="btn-pause">⏸ PAUSA</button>
     <button id="btn-restart">↻ RIAVVIA</button>
@@ -167,12 +191,12 @@
     </div>
     <div class="instr-card instr-mobile">
       <b>📱 SU TELEFONO</b>
-      Tocca il riquadro di gioco per iniziare. Tieni il dito sullo schermo e trascina per muovere la Lisa; ogni tocco spara.<br>
-      Per giocare meglio, aggiungi la pagina alla schermata Home (Safari: Condividi → Aggiungi a Home).<br>
-      Usa i pulsanti sotto per suono, pausa e riavvio.
+      Tocca per iniziare. Trascina sul riquadro di gioco per muovere la Lisa.<br>
+      Usa il pulsante <b>SPARA</b> per sparare (non serve più toccare per sparare).<br>
+      Aggiungi alla schermata Home per giocare a schermo intero.
     </div>
   </div>
-  <!-- deploy-check: unified-desktop-mobile -->
+  <!-- deploy-check: juice-combo-powerups-v1 -->
   <script src="game.js"></script>
 </body>
 </html>

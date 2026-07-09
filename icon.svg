@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#10173a"/>
+  <rect x="48" y="48" width="416" height="416" rx="32" fill="none" stroke="#c8102e" stroke-width="16"/>
+  <text x="256" y="200" text-anchor="middle" font-size="120"><z</text>
+  <text x="256" y="340" text-anchor="middle" font-family="monospace" font-size="48" font-weight="bold" fill="#f5edd8">LISA</text>
+  <text x="256" y="400" text-anchor="middle" font-family="monospace" font-size="32" fill="#8fa0e0">INVADERS</text>
+</svg>
