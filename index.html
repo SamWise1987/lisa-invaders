@@ -155,6 +155,45 @@
     user-select: none;
     -webkit-touch-callout: none;
   }
+  #btn-fire {
+    display: none;
+    position: absolute;
+    z-index: 6;
+    left: max(10px, env(safe-area-inset-left));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: 58px;
+    height: 58px;
+    min-height: 58px;
+    padding: 0;
+    border-radius: 10px;
+    border-width: 3px;
+    background: rgba(200,16,46,.88);
+    color: #fff;
+    font-size: 26px;
+    line-height: 1;
+    letter-spacing: 0;
+    box-shadow: 0 0 18px rgba(200,16,46,.55);
+    touch-action: none;
+  }
+  #btn-fire.is-active { background: #ff2448; transform: scale(.94); }
+  #play-hud-mini {
+    display: none;
+    position: absolute;
+    z-index: 6;
+    top: max(8px, env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    gap: 5px;
+  }
+  #play-hud-mini button {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 4px 7px;
+    font-size: 16px;
+    line-height: 1;
+    border-color: rgba(200,16,46,.75);
+    background: rgba(9,13,36,.82);
+    touch-action: manipulation;
+  }
   canvas {
     display: block;
     width: 100%;
@@ -187,15 +226,6 @@
   }
   button:hover, button:focus-visible { background: var(--bdb-red); color: #fff; box-shadow: 0 0 12px rgba(200,16,46,.7); outline: none; }
   button:active { transform: scale(.97); }
-  #btn-fire {
-    display: none;
-    min-height: 62px;
-    background: var(--bdb-red);
-    color: #fff;
-    font-size: 19px;
-    letter-spacing: 3px;
-    box-shadow: 0 0 16px rgba(200,16,46,.5);
-  }
   .hint { color: #6d7fc4; font-size: 11px; line-height: 1.5; text-align: center; }
   #instructions {
     width: min(720px, calc(100vw - 20px));
@@ -285,9 +315,84 @@
   .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px; border: 1px solid #28366d; border-radius: 7px; background: rgba(30,42,90,.25); }
   .setting-row span { color: var(--bdb-cream); font-size: 11px; line-height: 1.35; }
   .setting-row input { width: 20px; height: 20px; accent-color: var(--bdb-red); }
+  .mobile-only-setting { display: none; }
+  @media (max-width: 900px), (pointer: coarse) {
+    .mobile-only-setting { display: flex; }
+  }
   .settings-actions { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
   #toast-layer { position: fixed; z-index: 30; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 7px; pointer-events: none; }
   .toast { padding: 9px 13px; border: 1px solid #ffd56a; border-radius: 6px; background: #090d24; color: #ffd56a; font-size: 11px; box-shadow: 0 0 16px rgba(255,213,106,.3); }
+
+  /* Modal scheda condivisibile IG/FB */
+  #share-card-layer { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 14px; background: rgba(2,4,14,.92); }
+  .share-card-panel { width: min(420px, 100%); max-height: 94dvh; overflow: auto; padding: 14px; border: 2px solid var(--bdb-red); border-radius: 10px; background: #090d24; box-shadow: 0 0 30px rgba(200,16,46,.45); text-align: center; }
+  .share-card-panel h2 { margin-bottom: 8px; font-size: 18px; letter-spacing: 2px; }
+  .share-card-copy { margin-bottom: 10px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+  #share-card-preview { display: block; width: 100%; max-width: 320px; margin: 0 auto 12px; border: 2px solid #3b4a8c; border-radius: 8px; background: #0a0f2a; }
+  .share-card-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
+
+  /* Modalità partita: canvas più grande, UI compatta */
+  body.in-game { gap: 4px; padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: max(4px, env(safe-area-inset-bottom)); }
+  body.in-game #page-header,
+  body.in-game .hint,
+  body.in-game #instructions { display: none; }
+  body.in-game #game-column {
+    width: min(100vw - 16px, var(--game-max-width));
+    gap: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  body.in-game.mobile-ui #game-column { grid-template-rows: 1fr; }
+  body.in-game #game-stats {
+    grid-row: 1;
+    grid-column: 1;
+    align-self: start;
+    z-index: 4;
+    margin: 8px;
+    width: calc(100% - 16px);
+    min-height: 0;
+    border-radius: 6px;
+    background: rgba(9,13,36,.78);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 16px rgba(0,0,0,.35);
+  }
+  body.in-game #game-wrap { grid-row: 1; grid-column: 1; }
+  body.in-game.mobile-ui #game-stats {
+    min-height: 34px;
+    margin: 6px;
+    width: calc(100% - 12px);
+    grid-template-columns: repeat(5, 1fr);
+    border-width: 1px;
+  }
+  body.in-game.mobile-ui #game-stats .stat { min-height: 28px; padding: 2px 4px; }
+  body.in-game.mobile-ui #game-stats .stat-label { font-size: 8px; }
+  body.in-game.mobile-ui #game-stats .stat strong { font-size: 12px; }
+  body.in-game.mobile-ui #game-stats .stat:nth-child(4),
+  body.in-game.mobile-ui #game-stats #power-status { border-top: 0; }
+  body.in-game.mobile-ui #game-stats .stat:nth-child(4) { grid-column: auto; }
+  body.in-game.mobile-ui #power-status { grid-column: auto; }
+  body.in-game.mobile-ui #power-status .power-chip { width: 26px; height: 22px; font-size: 10px; }
+  body.in-game.mobile-ui .life-bottle { width: 8px; height: 16px; }
+  body.in-game.mobile-ui #hud { display: none; }
+  body.in-game.mobile-ui #btn-fire,
+  body.in-game.mobile-ui #play-hud-mini { display: flex; }
+  body.in-game.mobile-ui #play-hud-mini { flex-direction: column; }
+  body.in-game.mobile-ui.auto-fire-on #btn-fire { display: none; }
+
+  /* Landscape mobile */
+  @media (max-width: 900px) and (orientation: landscape) and (pointer: coarse) {
+    body.in-game { flex-direction: row; align-items: stretch; justify-content: center; gap: 6px; padding: max(4px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left)); }
+    body.in-game #game-column { width: min(100vw - 12px, var(--game-max-width)); max-height: 100dvh; }
+    body.in-game.mobile-ui #game-stats {
+      margin: 5px;
+      width: calc(100% - 10px);
+      grid-template-columns: repeat(5, 1fr);
+    }
+    body.in-game.mobile-ui #btn-fire { width: 52px; height: 52px; min-height: 52px; left: max(8px, env(safe-area-inset-left)); bottom: max(8px, env(safe-area-inset-bottom)); }
+    body.in-game.mobile-ui #play-hud-mini { top: max(6px, env(safe-area-inset-top)); right: max(6px, env(safe-area-inset-right)); }
+  }
+
   body.high-contrast { --bdb-red: #ff2448; --bdb-cream: #fff8df; --muted: #b9c9ff; background: #000; }
   body.high-contrast #game-wrap, body.high-contrast #game-stats, body.high-contrast button { border-width: 3px; }
 
@@ -316,7 +421,6 @@
     #power-status { grid-column: 2 / 4; border-top: 1px solid rgba(200,16,46,.42); }
     .power-chip { width: 31px; height: 25px; }
     #hud { grid-template-columns: repeat(4, 1fr); gap: 5px; }
-    #btn-fire { display: block; grid-column: 1 / -1; }
     button { min-width: 0; min-height: 44px; padding: 8px 5px; font-size: 11px; letter-spacing: .4px; }
     .canvas-overlay { padding: 7px; }
     .arcade-panel { width: 100%; padding: 10px; }
@@ -367,6 +471,11 @@
 
     <div id="game-wrap">
       <canvas id="game" width="900" height="640" aria-label="Area di gioco Lisa Invaders"></canvas>
+      <button id="btn-fire" type="button" aria-label="Spara" title="Spara">◎</button>
+      <div id="play-hud-mini" aria-label="Controlli rapidi">
+        <button id="btn-pause-mini" type="button" aria-label="Pausa">⏸</button>
+        <button id="btn-sound-mini" type="button" aria-label="Audio">🔊</button>
+      </div>
       <div id="run-mode" class="is-hidden"></div>
 
       <section id="start-menu" class="canvas-overlay" aria-label="Menu iniziale">
@@ -408,6 +517,7 @@
           <div id="gameover-achievements"></div>
           <div class="name-row"><input id="player-name" type="text" maxlength="12" autocomplete="nickname" aria-label="Nome giocatore" placeholder="GIOCATORE"><button id="btn-save-score" type="button">SALVA</button></div>
           <div class="menu-actions">
+            <button id="btn-share-image" type="button">📷 STORY</button>
             <button id="btn-share-score" type="button">CONDIVIDI</button>
             <button id="btn-retry" type="button">RIPROVA</button>
             <button id="btn-main-menu" type="button">MENU</button>
@@ -417,7 +527,6 @@
     </div>
 
     <div id="hud" aria-label="Comandi di gioco">
-      <button id="btn-fire" type="button">SPARA</button>
       <button id="btn-sound" type="button">🔊 SUONO: ON</button>
       <button id="btn-pause" type="button">⏸ PAUSA</button>
       <button id="btn-restart" type="button">↻ RIAVVIA</button>
@@ -431,7 +540,7 @@
       <b>SU PC</b> · <kbd>←</kbd> <kbd>→</kbd> oppure <kbd>A</kbd> <kbd>D</kbd> per muoverti · <kbd>SPAZIO</kbd> per sparare · <kbd>P</kbd> pausa · <kbd>M</kbd> muto · <kbd>R</kbd> riavvia
     </div>
     <div class="instr-card instr-mobile">
-      Trascina sul gioco per muovere Lisa e tieni premuto <b>SPARA</b> per fare fuoco.
+      Trascina sul gioco per muovere Lisa. Pollice sinistro su <b>◎</b> per sparare, destro per muoverti. In landscape il campo è più largo.
     </div>
   </div>
 
@@ -453,14 +562,27 @@
           <label class="setting-row"><span>SCREEN SHAKE</span><input id="setting-screen-shake" type="checkbox" checked></label>
           <label class="setting-row"><span>ALTO CONTRASTO</span><input id="setting-high-contrast" type="checkbox"></label>
           <label class="setting-row"><span>VIBRAZIONE</span><input id="setting-haptics" type="checkbox" checked></label>
+          <label class="setting-row mobile-only-setting"><span>AUTO-FUOCO MOBILE</span><input id="setting-auto-fire" type="checkbox"></label>
         </div>
         <div class="settings-actions"><button id="btn-replay-tutorial" type="button">RIPETI TUTORIAL</button></div>
       </div>
     </div>
   </section>
+  <section id="share-card-layer" class="is-hidden" aria-modal="true" role="dialog" aria-label="Scheda punteggio da condividere">
+    <div class="share-card-panel">
+      <h2>CONDIVIDI IL TUO PUNTEGGIO</h2>
+      <p class="share-card-copy">Scarica l'immagine o condividila su Instagram, Facebook e altri social.</p>
+      <img id="share-card-preview" alt="Anteprima scheda punteggio Lisa Invaders" width="320" height="400">
+      <div class="share-card-actions">
+        <button id="btn-share-card-download" type="button">SCARICA</button>
+        <button id="btn-share-card-native" type="button">CONDIVIDI</button>
+        <button id="btn-share-card-close" type="button">CHIUDI</button>
+      </div>
+    </div>
+  </section>
   <div id="toast-layer" aria-live="polite"></div>
 
-  <!-- deploy-check: advanced-gameplay-v1 -->
+  <!-- deploy-check: mobile-controls-share-v1 -->
   <script src="meta.js"></script>
   <script src="game.js"></script>
   <script>
