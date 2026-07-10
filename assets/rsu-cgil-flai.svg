@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 168" role="img" aria-label="RSU CGIL FLAI">
+  <title>RSU CGIL FLAI</title>
+  <text x="50" y="14" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700" letter-spacing="2.5" fill="#8fa0e0">RSU</text>
+  <text x="50" y="36" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="900" fill="#7a7a7a">CGIL</text>
+  <rect x="15" y="44" width="70" height="70" fill="#e30613"/>
+  <path d="M30 68 C42 56, 58 58, 68 70 C58 76, 44 78, 30 68 Z" fill="#111"/>
+  <path d="M34 76 C46 66, 60 68, 64 82 C52 86, 40 84, 34 76 Z" fill="#111"/>
+  <text x="50" y="102" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="900" fill="#111">FLAI</text>
+</svg>
