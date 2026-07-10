@@ -1,95 +1,67 @@
-# 🍺 LISA INVADERS
+# 🍺 Lisa Invaders
 
-Un gioco stile *Space Invaders* dove **Lisa** — la lager italiana non filtrata di Birra del Borgo — difende la birra artigianale dall'invasione delle lager industriali: Bud, Beck's, Tennent's e Corona.
+Arcade browser game responsive per desktop e mobile: Lisa difende la birra italiana da Bud, Beck's, Tennent's e Corona.
 
-**🎮 Gioca online: https://lisa-invaders.vercel.app**
+**Gioca online:** [lisa-invaders.vercel.app](https://lisa-invaders.vercel.app)
 
-## Come si gioca
+## Funzioni
 
-### 💻 Su PC (tastiera e mouse)
-- `←` `→` oppure `A` `D` per muoverti
-- `SPAZIO` per sparare
-- Clic sul gioco per sparare, trascina con il mouse per muoverti
-- `P` pausa · `M` muto · `R` riavvia
+- Modalità **Facile**, **Normale** e **Arcade**, con vite, velocità, frequenza di fuoco, drop e moltiplicatori diversi.
+- Boss ogni 5 livelli con tre pattern ciclici: ventaglio, mira sul giocatore e pioggia di colpi.
+- Tutorial interattivo di circa 10 secondi alla prima partita, ripetibile dalle opzioni.
+- Missione giornaliera deterministica basata sulla data UTC: stessa configurazione per tutti.
+- Obiettivi persistenti: combo ×4, livello senza danni, 20 nemici consecutivi, boss e missione giornaliera.
+- Classifica locale top 10 e classifica online opzionale tramite Upstash Redis.
+- Schermata finale con punteggio, livello, record, salvataggio nome e condivisione Web Share/clipboard.
+- Gamepad su desktop, controlli touch con fuoco continuo e vibrazione mobile disattivabile.
+- Accessibilità: movimento ridotto, screen shake disattivabile e modalità ad alto contrasto.
+- PWA installabile, offline dopo il primo caricamento e pausa automatica in background.
 
-### 📱 Su iPhone / telefono
-- Tocca il riquadro di gioco per iniziare
-- Tieni il dito sullo schermo e trascina per muovere la Lisa
-- Ogni tocco spara
-- Usa i pulsanti sotto il gioco per suono, pausa e riavvio
-- Consiglio: aggiungi la pagina alla schermata Home (Safari → Condividi → Aggiungi a Home) per evitare zoom e scroll del browser
+## Comandi
 
-## Punteggi
+### Desktop
 
-| Nemico | Punti |
-|---|---|
-| Bud | 40 |
-| Beck's | 30 |
-| Tennent's | 20 |
-| Corona | 10 |
+- `←` `→` oppure `A` `D`: movimento
+- `SPAZIO`, clic o pulsante A/grilletto del gamepad: fuoco
+- `P` o Start gamepad: pausa
+- `M`: audio
+- `R`: riavvio
 
-Il record viene salvato nel browser. A ogni ondata ripulita si sale di livello: i nemici diventano più veloci e sparano di più.
+### Mobile
 
-## Deploy su Vercel
+- Trascina Lisa nell'area di gioco.
+- Tieni premuto **SPARA** per il fuoco continuo.
+- Usa i pulsanti sotto il gioco per audio, pausa, riavvio e opzioni.
 
-Il sito è pubblicato su [lisa-invaders.vercel.app](https://lisa-invaders.vercel.app).
+## Sviluppo locale
 
-### Deploy automatico da GitHub
-
-Dopo ogni push su `master`, Vercel deve ricostruire il sito. Se il merge non aggiorna il sito live, di solito il progetto **non è collegato al repository GitHub** (deploy fatto solo da CLI o drag-and-drop).
-
-**Per collegare il repo e ripristinare il deploy automatico:**
-
-1. Apri [vercel.com/dashboard](https://vercel.com/dashboard) → progetto **lisa-invaders**
-2. **Settings** → **Git** → **Connect Git Repository**
-3. Scegli `SamWise1987/lisa-invaders` e branch di produzione **`master`**
-4. Framework preset: **Other** (sito statico, nessuna build)
-5. Root Directory: `.` (root del repo)
-6. Salva, poi vai in **Deployments** → **Redeploy** sull’ultimo commit di `master`
-
-**Verifica rapida:** nella pagina del deploy su Vercel deve comparire il commit `Migliora l'esperienza touch su mobile...`. Se vedi un commit più vecchio, il collegamento Git non è attivo.
-
-### Deploy manuale (alternativa)
-
-```bash
-npx vercel --prod
-```
-
-Serve aver fatto `npx vercel link` al progetto la prima volta.
-
-
-HTML5 Canvas + JavaScript vanilla, effetti sonori retrò generati con WebAudio (nessun file audio). Nessuna dipendenza, nessuna build: basta aprire `index.html` o servire la cartella con un qualsiasi server statico.
+Non ci sono dipendenze o build step.
 
 ```bash
 python3 -m http.server 8000
-# poi apri http://localhost:8000
 ```
 
-## Deploy su Vercel
+Apri `http://localhost:8000`.
 
-Sito statico (HTML/JS, nessuna build). Su Vercel imposta **Framework Preset: Other** e lascia vuoto il **Build Command**.
+## Classifica online
 
-Pubblicato su [lisa-invaders.vercel.app](https://lisa-invaders.vercel.app).
+La funzione serverless `api/leaderboard.js` usa le API REST di Upstash Redis. Nel progetto Vercel devono essere presenti:
 
-### Dopo il merge su `master`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
 
-1. Vercel → progetto **lisa-invaders** → **Deployments**
-2. Verifica che il deploy più recente abbia commit su `master` e stato **Production**
-3. Se il deploy è solo **Preview**: menu **⋯** → **Promote to Production**
-4. Controlla che **Settings → Git → Production Branch** sia **`master`**
+Se le variabili non sono configurate, il gioco continua a funzionare e mostra la classifica locale.
 
-### Verifica che il deploy sia aggiornato
+## Deploy Vercel
 
-Apri il sorgente della pagina e cerca il commento:
-
-```html
-<!-- deploy-check: unified-desktop-mobile -->
-```
-
-Se non compare, il sito live non ha ancora l'ultima versione.
-
-### Deploy manuale (alternativa)
+Il progetto è statico con una funzione serverless, quindi su Vercel usa **Framework Preset: Other**, root `.` e nessun Build Command.
 
 ```bash
-npx vercel --prod
+vercel --prod
+```
+
+Il branch di produzione GitHub è `master`. Per verificare la versione pubblicata, nel sorgente cerca:
+
+```html
+<!-- deploy-check: advanced-gameplay-v1 -->
 ```

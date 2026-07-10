@@ -12,80 +12,144 @@
 <meta property="og:description" content="La lager italiana contro l'invasione industriale. Gioca gratis nel browser!">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://lisa-invaders.vercel.app">
-<meta property="og:image" content="https://lisa-invaders.vercel.app/icon.svg">
+<meta property="og:image" content="https://lisa-invaders.vercel.app/assets/icon-512.png">
 <meta name="twitter:card" content="summary">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
 <title>LISA INVADERS — Birra del Borgo</title>
 <style>
   :root {
     --bdb-blue: #1e2a5a;
     --bdb-red: #c8102e;
     --bdb-cream: #f5edd8;
+    --muted: #8fa0e0;
+    --night: #090d24;
+    --game-ratio: 1.40625;
+    --game-max-width: 900px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
     overscroll-behavior: none;
-    touch-action: manipulation;
     -webkit-text-size-adjust: 100%;
   }
   body {
-    background: radial-gradient(ellipse at 50% 30%, #232f63 0%, #10173a 55%, #090d24 100%);
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    font-family: "Courier New", monospace;
-    color: var(--bdb-cream);
-    padding: 12px;
-    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    justify-content: flex-start;
+    gap: 8px;
     overflow-x: hidden;
-  }
-  h1 {
-    font-size: clamp(20px, 4vw, 34px);
-    letter-spacing: 6px;
+    background: radial-gradient(ellipse at 50% 24%, #232f63 0%, #10173a 52%, var(--night) 100%);
     color: var(--bdb-cream);
-    text-shadow: 0 0 14px rgba(200,16,46,.8), 3px 3px 0 var(--bdb-red);
-    margin-bottom: 4px;
-    text-align: center;
-  }
-  .subtitle {
-    font-size: 12px;
-    letter-spacing: 3px;
-    color: #8fa0e0;
-    text-transform: uppercase;
+    font-family: "Courier New", monospace;
+    padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   }
   #page-header {
+    width: min(900px, calc(100vw - 20px));
+    min-height: 68px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: clamp(16px, 4vw, 32px);
-    flex-wrap: wrap;
-    width: 100%;
-    max-width: 900px;
-    margin-bottom: 10px;
+    gap: clamp(14px, 3vw, 28px);
   }
-  .brand { text-align: center; }
-  .rsu-logo {
-    flex-shrink: 0;
-    display: block;
-    line-height: 0;
+  .brand { min-width: 0; text-align: center; }
+  h1 {
+    color: var(--bdb-cream);
+    font-size: clamp(22px, 3vw, 34px);
+    letter-spacing: clamp(3px, .55vw, 6px);
+    line-height: 1;
+    text-align: center;
+    text-shadow: 0 0 14px rgba(200,16,46,.8), 3px 3px 0 var(--bdb-red);
   }
+  .subtitle {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: clamp(9px, 1.05vw, 12px);
+    letter-spacing: clamp(1px, .28vw, 3px);
+    text-transform: uppercase;
+  }
+  .rsu-logo { flex: 0 0 auto; line-height: 0; }
   .rsu-logo img {
-    height: clamp(100px, 18vw, 150px);
-    width: auto;
     display: block;
+    width: auto;
+    height: clamp(54px, 8vw, 78px);
     filter: drop-shadow(0 2px 10px rgba(0,0,0,.35));
   }
+  #game-column {
+    width: min(900px, calc(100vw - 20px), var(--game-max-width));
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  #game-stats {
+    min-height: 42px;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto 1fr auto;
+    align-items: stretch;
+    overflow: hidden;
+    border: 2px solid var(--bdb-red);
+    border-radius: 8px;
+    background: rgba(9,13,36,.86);
+    box-shadow: 0 0 18px rgba(200,16,46,.22);
+  }
+  .stat {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-right: 1px solid rgba(200,16,46,.42);
+  }
+  .stat-label {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .stat strong { color: var(--bdb-cream); font-size: 17px; }
+  #stat-lives { gap: 5px; }
+  .life-bottle { width: 11px; height: 24px; object-fit: contain; }
+  #power-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 8px;
+  }
+  .power-chip {
+    width: 34px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: 1px solid #3b4a8c;
+    border-radius: 5px;
+    color: #50609c;
+    background: rgba(30,42,90,.35);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .power-chip .power-time { display: none; font-size: 10px; }
+  .power-chip.active { color: var(--bdb-cream); border-color: currentColor; box-shadow: 0 0 9px currentColor; }
+  .power-chip.active .power-time { display: inline; }
+  .power-chip[data-power="rapid"].active { color: #8fd4ff; }
+  .power-chip[data-power="triple"].active { color: #ffd56a; }
+  .power-chip[data-power="shield"].active { color: #9eff9e; }
   #game-wrap {
     position: relative;
-    max-width: 100%;
+    width: 100%;
+    aspect-ratio: var(--game-ratio);
+    overflow: hidden;
     border: 3px solid var(--bdb-red);
     border-radius: 8px;
-    box-shadow: 0 0 30px rgba(200,16,46,.35), inset 0 0 60px rgba(0,0,0,.5);
     background: #0a0f2a;
+    box-shadow: 0 0 28px rgba(200,16,46,.35), inset 0 0 55px rgba(0,0,0,.5);
     touch-action: none;
     -webkit-user-select: none;
     user-select: none;
@@ -93,101 +157,187 @@
   }
   canvas {
     display: block;
+    width: 100%;
+    height: 100%;
     border-radius: 5px;
-    max-width: 100%;
-    height: auto;
     touch-action: none;
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
-  #btn-fire {
-    display: none;
-    background: var(--bdb-red);
-    color: #fff;
-    font-weight: bold;
-    font-size: 16px;
-    letter-spacing: 2px;
-    min-width: 120px;
-    box-shadow: 0 0 16px rgba(200,16,46,.5);
-  }
-  #btn-fire:active { transform: scale(0.96); }
-  @media (pointer: coarse) {
-    #btn-fire { display: inline-flex; align-items: center; justify-content: center; }
-  }
   #hud {
-    display: flex;
-    gap: 18px;
+    display: grid;
+    grid-template-columns: repeat(4, max-content);
     align-items: center;
-    margin-top: 10px;
-    flex-wrap: wrap;
     justify-content: center;
+    gap: 10px;
   }
   button {
-    font-family: inherit;
-    font-size: 13px;
-    letter-spacing: 1px;
-    background: transparent;
-    color: var(--bdb-cream);
+    min-height: 42px;
+    padding: 8px 16px;
     border: 2px solid var(--bdb-red);
     border-radius: 6px;
-    padding: 8px 16px;
+    background: rgba(9,13,36,.72);
+    color: var(--bdb-cream);
+    font: 700 13px/1 "Courier New", monospace;
+    letter-spacing: 1px;
     cursor: pointer;
-    transition: all .15s;
-    min-height: 40px;
+    transition: transform .12s, background .12s, box-shadow .12s;
+    -webkit-tap-highlight-color: transparent;
   }
-  button:hover { background: var(--bdb-red); color: #fff; box-shadow: 0 0 12px rgba(200,16,46,.7); }
-  @media (pointer: coarse) {
-    button {
-      min-height: 44px;
-      padding: 10px 18px;
-      font-size: 14px;
-    }
-    h1 { letter-spacing: 3px; }
-    #page-header { gap: 12px; }
-    #instructions { gap: 10px; }
-    .instr-card { min-width: 0; flex: 1 1 100%; }
+  button:hover, button:focus-visible { background: var(--bdb-red); color: #fff; box-shadow: 0 0 12px rgba(200,16,46,.7); outline: none; }
+  button:active { transform: scale(.97); }
+  #btn-fire {
+    display: none;
+    min-height: 62px;
+    background: var(--bdb-red);
+    color: #fff;
+    font-size: 19px;
+    letter-spacing: 3px;
+    box-shadow: 0 0 16px rgba(200,16,46,.5);
   }
-  .hint { font-size: 11px; color: #6d7fc4; margin-top: 4px; text-align: center; line-height: 1.6; }
+  .hint { color: #6d7fc4; font-size: 11px; line-height: 1.5; text-align: center; }
   #instructions {
-    margin-top: 14px;
+    width: min(720px, calc(100vw - 20px));
+    margin-top: 2px;
     display: flex;
-    gap: 14px;
-    flex-wrap: wrap;
     justify-content: center;
-    max-width: 720px;
   }
   .instr-card {
-    background: rgba(30,42,90,.35);
-    border: 1px solid rgba(200,16,46,.4);
+    padding: 9px 14px;
+    border: 1px solid rgba(200,16,46,.35);
     border-radius: 8px;
-    padding: 10px 16px;
-    font-size: 12px;
+    background: rgba(30,42,90,.25);
     color: #cdd6f0;
-    line-height: 1.7;
-    min-width: 240px;
-    flex: 1;
+    font-size: 11px;
+    line-height: 1.65;
+    text-align: center;
   }
-  .instr-card b {
-    display: block;
-    color: var(--bdb-cream);
-    font-size: 13px;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-  }
+  .instr-card b { color: var(--bdb-cream); }
   .instr-card kbd {
-    background: #1e2a5a;
+    padding: 1px 5px;
     border: 1px solid #3b4a8c;
     border-radius: 4px;
-    padding: 1px 6px;
-    font-size: 11px;
-    color: #f5edd8;
+    background: var(--bdb-blue);
+    color: var(--bdb-cream);
+    font-size: 10px;
   }
   .instr-mobile { display: none; }
-  .instr-desktop { display: block; }
-  @media (pointer: coarse) {
+  .is-hidden { display: none !important; }
+  .canvas-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(10px, 2.5vw, 24px);
+    background: rgba(9,13,36,.76);
+  }
+  .arcade-panel {
+    width: min(620px, 96%);
+    max-height: 94%;
+    overflow: auto;
+    padding: clamp(12px, 2.4vw, 22px);
+    border: 2px solid var(--bdb-red);
+    border-radius: 10px;
+    background: rgba(9,13,36,.96);
+    box-shadow: 0 0 24px rgba(200,16,46,.35);
+    color: var(--bdb-cream);
+    text-align: center;
+  }
+  .arcade-panel h2 { font-size: clamp(18px, 3vw, 28px); letter-spacing: 2px; text-shadow: 2px 2px 0 var(--bdb-red); }
+  .panel-copy { margin: 8px auto 12px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+  .difficulty-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .difficulty-button { min-width: 0; padding: 12px 8px; }
+  .difficulty-button.selected { background: var(--bdb-red); color: #fff; box-shadow: 0 0 14px rgba(200,16,46,.65); }
+  .daily-button { width: 100%; margin-top: 9px; padding: 11px; border-color: #ffd56a; color: #ffd56a; }
+  .daily-button small { display: block; margin-top: 4px; color: #cdd6f0; font-size: 9px; line-height: 1.35; }
+  .menu-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+  .menu-actions button { border-color: #3b4a8c; }
+  #tutorial-overlay { align-items: flex-start; pointer-events: none; background: rgba(9,13,36,.28); }
+  .tutorial-card { width: min(610px, 96%); padding: 12px 14px; border: 2px solid #ffd56a; border-radius: 9px; background: rgba(9,13,36,.96); box-shadow: 0 0 18px rgba(255,213,106,.3); pointer-events: auto; }
+  .tutorial-progress { display: flex; justify-content: center; gap: 6px; margin: 8px 0; }
+  .tutorial-dot { width: 34px; height: 4px; background: #3b4a8c; }
+  .tutorial-dot.active { background: #ffd56a; box-shadow: 0 0 8px #ffd56a; }
+  #tutorial-title { color: #ffd56a; font-size: 16px; letter-spacing: 1px; }
+  #tutorial-text { margin: 5px 0 8px; color: var(--bdb-cream); font-size: 12px; }
+  #gameover-panel .score-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 12px 0; }
+  .score-box { padding: 8px 4px; border: 1px solid #3b4a8c; border-radius: 6px; }
+  .score-box span { display: block; color: var(--muted); font-size: 9px; }
+  .score-box strong { display: block; margin-top: 4px; font-size: 20px; }
+  #gameover-achievements { min-height: 20px; margin-bottom: 8px; color: #ffd56a; font-size: 11px; line-height: 1.5; }
+  .name-row { display: grid; grid-template-columns: 1fr auto; gap: 7px; margin: 8px 0; }
+  input[type="text"] { min-width: 0; border: 2px solid #3b4a8c; border-radius: 6px; background: #10173a; color: var(--bdb-cream); padding: 9px; font: 700 13px "Courier New", monospace; text-transform: uppercase; }
+  #run-mode { position: absolute; z-index: 3; top: 7px; left: 50%; transform: translateX(-50%); padding: 4px 8px; border: 1px solid rgba(255,213,106,.65); border-radius: 4px; background: rgba(9,13,36,.82); color: #ffd56a; font-size: 10px; font-weight: 700; pointer-events: none; }
+  #modal-layer { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; padding: 14px; background: rgba(2,4,14,.88); }
+  .modal-card { position: relative; width: min(760px, 100%); max-height: 92dvh; overflow: auto; padding: 18px; border: 2px solid var(--bdb-red); border-radius: 10px; background: #090d24; box-shadow: 0 0 30px rgba(200,16,46,.45); }
+  .modal-card h2 { margin-bottom: 12px; text-align: center; letter-spacing: 2px; }
+  .close-modal { position: absolute; right: 9px; top: 8px; min-height: 34px; padding: 5px 9px; }
+  .modal-tabs { display: flex; gap: 7px; margin-bottom: 10px; }
+  .modal-tabs button { flex: 1; border-color: #3b4a8c; }
+  .modal-tabs button.selected { background: var(--bdb-red); border-color: var(--bdb-red); }
+  .leaderboard-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .leaderboard-table th, .leaderboard-table td { padding: 7px 5px; border-bottom: 1px solid #28366d; text-align: left; }
+  .leaderboard-table th { color: var(--muted); }
+  #leaderboard-status { margin: 10px 0; color: var(--muted); font-size: 11px; text-align: center; }
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px; border: 1px solid #28366d; border-radius: 7px; background: rgba(30,42,90,.25); }
+  .setting-row span { color: var(--bdb-cream); font-size: 11px; line-height: 1.35; }
+  .setting-row input { width: 20px; height: 20px; accent-color: var(--bdb-red); }
+  .settings-actions { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+  #toast-layer { position: fixed; z-index: 30; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 7px; pointer-events: none; }
+  .toast { padding: 9px 13px; border: 1px solid #ffd56a; border-radius: 6px; background: #090d24; color: #ffd56a; font-size: 11px; box-shadow: 0 0 16px rgba(255,213,106,.3); }
+  body.high-contrast { --bdb-red: #ff2448; --bdb-cream: #fff8df; --muted: #b9c9ff; background: #000; }
+  body.high-contrast #game-wrap, body.high-contrast #game-stats, body.high-contrast button { border-width: 3px; }
+
+  @media (max-height: 850px) and (min-width: 701px) {
+    body { gap: 6px; }
+    #page-header { min-height: 58px; }
+    .rsu-logo img { height: 58px; }
+    #game-column { width: min(900px, calc(100vw - 20px), var(--game-max-width)); gap: 6px; }
+    #instructions, .hint { display: none; }
+  }
+
+  @media (max-width: 700px), (pointer: coarse) {
+    body { gap: 6px; padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+    #page-header { min-height: 50px; gap: 9px; }
+    h1 { font-size: clamp(20px, 6vw, 25px); letter-spacing: 3px; }
+    .subtitle { display: none; }
+    .rsu-logo img { height: 48px; }
+    #game-column { width: min(100%, var(--game-max-width)); min-width: 0; gap: 6px; }
+    #game-stats { min-height: 64px; grid-template-columns: 1fr 1fr 1fr; }
+    .stat { min-height: 31px; padding: 4px 5px; gap: 4px; }
+    .stat:nth-child(3) { border-right: 0; }
+    .stat:nth-child(4) { grid-column: 1; border-top: 1px solid rgba(200,16,46,.42); }
+    .stat-label { font-size: 9px; letter-spacing: .5px; }
+    .stat strong { font-size: 14px; }
+    .life-bottle { width: 9px; height: 20px; }
+    #power-status { grid-column: 2 / 4; border-top: 1px solid rgba(200,16,46,.42); }
+    .power-chip { width: 31px; height: 25px; }
+    #hud { grid-template-columns: repeat(4, 1fr); gap: 5px; }
+    #btn-fire { display: block; grid-column: 1 / -1; }
+    button { min-width: 0; min-height: 44px; padding: 8px 5px; font-size: 11px; letter-spacing: .4px; }
+    .canvas-overlay { padding: 7px; }
+    .arcade-panel { width: 100%; padding: 10px; }
+    .arcade-panel h2 { font-size: 18px; }
+    .panel-copy { margin: 5px auto 8px; font-size: 10px; }
+    .difficulty-button { padding: 9px 3px; font-size: 10px; }
+    .daily-button { margin-top: 6px; padding: 8px 4px; }
+    .menu-actions { margin-top: 7px; gap: 4px; }
+    .menu-actions button { min-height: 36px; padding: 5px 7px; font-size: 9px; }
+    #tutorial-text { font-size: 10px; }
+    #gameover-panel .arcade-panel { max-height: 98%; }
+    .score-box strong { font-size: 16px; }
+    .settings-grid { grid-template-columns: 1fr; }
+    .modal-card { padding: 14px 10px; }
+    .hint, #instructions { display: none; }
     .instr-mobile { display: block; }
     .instr-desktop { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
   }
 </style>
 </head>
@@ -201,31 +351,122 @@
       <img src="assets/rsu-cgil-flai.png" alt="RSU CGIL FLAI" width="256" height="330">
     </div>
   </header>
-  <div id="game-wrap">
-    <canvas id="game" width="900" height="640"></canvas>
-  </div>
-  <div id="hud">
-    <button id="btn-fire">🔫 SPARA</button>
-    <button id="btn-sound">🔊 SUONO: ON</button>
-    <button id="btn-pause">⏸ PAUSA</button>
-    <button id="btn-restart">↻ RIAVVIA</button>
-  </div>
+
+  <main id="game-column">
+    <section id="game-stats" aria-label="Stato della partita" aria-live="polite">
+      <div class="stat"><span class="stat-label">PUNTI</span><strong id="stat-score">0</strong></div>
+      <div class="stat"><span class="stat-label">RECORD</span><strong id="stat-high">0</strong></div>
+      <div class="stat" id="stat-lives" aria-label="3 vite"></div>
+      <div class="stat"><span class="stat-label">LIVELLO</span><strong id="stat-level">1</strong></div>
+      <div id="power-status" aria-label="Power-up attivi">
+        <span class="power-chip" data-power="shield" title="Scudo" aria-label="Scudo non attivo">S <span class="power-time">—</span></span>
+        <span class="power-chip" data-power="rapid" title="Fuoco rapido" aria-label="Fuoco rapido non attivo">R <span class="power-time">—</span></span>
+        <span class="power-chip" data-power="triple" title="Colpo triplo" aria-label="Colpo triplo non attivo">3 <span class="power-time">—</span></span>
+      </div>
+    </section>
+
+    <div id="game-wrap">
+      <canvas id="game" width="900" height="640" aria-label="Area di gioco Lisa Invaders"></canvas>
+      <div id="run-mode" class="is-hidden"></div>
+
+      <section id="start-menu" class="canvas-overlay" aria-label="Menu iniziale">
+        <div class="arcade-panel">
+          <h2>SCEGLI MODALITÀ</h2>
+          <p class="panel-copy">Facile per iniziare, Normale per la sfida classica, Arcade per punteggi più alti.</p>
+          <div class="difficulty-options" role="group" aria-label="Difficoltà">
+            <button class="difficulty-button" data-difficulty="easy" type="button">FACILE</button>
+            <button class="difficulty-button selected" data-difficulty="normal" type="button">NORMALE</button>
+            <button class="difficulty-button" data-difficulty="arcade" type="button">ARCADE</button>
+          </div>
+          <button id="btn-daily" class="daily-button" type="button">★ MISSIONE DEL GIORNO<small id="daily-description"></small></button>
+          <div class="menu-actions">
+            <button id="btn-start-run" type="button">GIOCA</button>
+            <button id="btn-howto" type="button">TUTORIAL</button>
+            <button id="btn-leaderboard" type="button">CLASSIFICA</button>
+            <button id="btn-open-settings" type="button">OPZIONI</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="tutorial-overlay" class="canvas-overlay is-hidden" aria-live="polite">
+        <div class="tutorial-card">
+          <strong id="tutorial-title">1. MUOVITI</strong>
+          <div class="tutorial-progress"><span class="tutorial-dot active"></span><span class="tutorial-dot"></span><span class="tutorial-dot"></span></div>
+          <p id="tutorial-text">Usa le frecce, A/D o trascina Lisa.</p>
+          <button id="btn-skip-tutorial" type="button">SALTA</button>
+        </div>
+      </section>
+
+      <section id="gameover-panel" class="canvas-overlay is-hidden" aria-label="Risultato finale">
+        <div class="arcade-panel">
+          <h2>GAME OVER</h2>
+          <div class="score-grid">
+            <div class="score-box"><span>PUNTI</span><strong id="final-score">0</strong></div>
+            <div class="score-box"><span>LIVELLO</span><strong id="final-level">1</strong></div>
+            <div class="score-box"><span>RECORD</span><strong id="final-record">0</strong></div>
+          </div>
+          <div id="gameover-achievements"></div>
+          <div class="name-row"><input id="player-name" type="text" maxlength="12" autocomplete="nickname" aria-label="Nome giocatore" placeholder="GIOCATORE"><button id="btn-save-score" type="button">SALVA</button></div>
+          <div class="menu-actions">
+            <button id="btn-share-score" type="button">CONDIVIDI</button>
+            <button id="btn-retry" type="button">RIPROVA</button>
+            <button id="btn-main-menu" type="button">MENU</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="hud" aria-label="Comandi di gioco">
+      <button id="btn-fire" type="button">SPARA</button>
+      <button id="btn-sound" type="button">🔊 SUONO: ON</button>
+      <button id="btn-pause" type="button">⏸ PAUSA</button>
+      <button id="btn-restart" type="button">↻ RIAVVIA</button>
+      <button id="btn-settings" type="button">⚙ OPZIONI</button>
+    </div>
+  </main>
+
   <div class="hint">Difendi la birra artigianale da Bud, Beck's, Corona e Tennent's!</div>
   <div id="instructions">
     <div class="instr-card instr-desktop">
-      <b>💻 SU PC</b>
-      <kbd>←</kbd> <kbd>→</kbd> oppure <kbd>A</kbd> <kbd>D</kbd> per muoverti<br>
-      <kbd>SPAZIO</kbd> per sparare · clic sul gioco per sparare, trascina per muovere<br>
-      <kbd>P</kbd> pausa &nbsp;·&nbsp; <kbd>M</kbd> muto &nbsp;·&nbsp; <kbd>R</kbd> riavvia
+      <b>SU PC</b> · <kbd>←</kbd> <kbd>→</kbd> oppure <kbd>A</kbd> <kbd>D</kbd> per muoverti · <kbd>SPAZIO</kbd> per sparare · <kbd>P</kbd> pausa · <kbd>M</kbd> muto · <kbd>R</kbd> riavvia
     </div>
     <div class="instr-card instr-mobile">
-      <b>📱 SU TELEFONO</b>
-      Tocca per iniziare. Trascina sul riquadro di gioco per muovere la Lisa.<br>
-      Usa il pulsante <b>SPARA</b> per sparare (non serve più toccare per sparare).<br>
-      Aggiungi alla schermata Home per giocare a schermo intero.
+      Trascina sul gioco per muovere Lisa e tieni premuto <b>SPARA</b> per fare fuoco.
     </div>
   </div>
-  <!-- deploy-check: rsu-cgil-flai-logo-png -->
+
+  <section id="modal-layer" class="is-hidden" aria-modal="true" role="dialog" aria-label="Classifica e opzioni">
+    <div class="modal-card">
+      <button id="btn-close-modal" class="close-modal" type="button" aria-label="Chiudi">×</button>
+      <div class="modal-tabs">
+        <button id="tab-leaderboard" class="selected" type="button">CLASSIFICA</button>
+        <button id="tab-settings" type="button">ACCESSIBILITÀ</button>
+      </div>
+      <div id="leaderboard-view">
+        <div class="modal-tabs"><button id="tab-local" class="selected" type="button">LOCALE</button><button id="tab-online" type="button">ONLINE</button></div>
+        <div id="leaderboard-status">I migliori 10 punteggi</div>
+        <table class="leaderboard-table"><thead><tr><th>#</th><th>GIOCATORE</th><th>PUNTI</th><th>LV</th><th>MODALITÀ</th></tr></thead><tbody id="leaderboard-body"></tbody></table>
+      </div>
+      <div id="settings-view" class="is-hidden">
+        <div class="settings-grid">
+          <label class="setting-row"><span>RIDUCI MOVIMENTO</span><input id="setting-reduced-motion" type="checkbox"></label>
+          <label class="setting-row"><span>SCREEN SHAKE</span><input id="setting-screen-shake" type="checkbox" checked></label>
+          <label class="setting-row"><span>ALTO CONTRASTO</span><input id="setting-high-contrast" type="checkbox"></label>
+          <label class="setting-row"><span>VIBRAZIONE</span><input id="setting-haptics" type="checkbox" checked></label>
+        </div>
+        <div class="settings-actions"><button id="btn-replay-tutorial" type="button">RIPETI TUTORIAL</button></div>
+      </div>
+    </div>
+  </section>
+  <div id="toast-layer" aria-live="polite"></div>
+
+  <!-- deploy-check: advanced-gameplay-v1 -->
+  <script src="meta.js"></script>
   <script src="game.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
+    }
+  </script>
 </body>
 </html>

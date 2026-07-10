@@ -1,7 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Lisa Invaders</title>
   <rect width="512" height="512" rx="64" fill="#10173a"/>
   <rect x="48" y="48" width="416" height="416" rx="32" fill="none" stroke="#c8102e" stroke-width="16"/>
-  <text x="256" y="200" text-anchor="middle" font-size="120"><z</text>
-  <text x="256" y="340" text-anchor="middle" font-family="monospace" font-size="48" font-weight="bold" fill="#f5edd8">LISA</text>
-  <text x="256" y="400" text-anchor="middle" font-family="monospace" font-size="32" fill="#8fa0e0">INVADERS</text>
+  <path d="M218 92h76v52l18 30v172c0 31-25 56-56 56s-56-25-56-56V174l18-30V92Z" fill="#f5edd8"/>
+  <path d="M229 92h54v42h-54z" fill="#c8102e"/>
+  <rect x="211" y="226" width="90" height="90" rx="8" fill="#c8102e"/>
+  <text x="256" y="282" text-anchor="middle" font-family="monospace" font-size="42" font-weight="bold" fill="#fff">LISA</text>
+  <text x="256" y="445" text-anchor="middle" font-family="monospace" font-size="30" font-weight="bold" letter-spacing="3" fill="#8fa0e0">INVADERS</text>
 </svg>
