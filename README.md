@@ -45,10 +45,12 @@ Apri `http://localhost:8000`.
 
 ## Classifica online
 
-La funzione serverless `api/leaderboard.js` usa le API REST di Upstash Redis. Nel progetto Vercel devono essere presenti:
+La funzione serverless `api/leaderboard.js` usa le API REST di Upstash Redis. L'integrazione Vercel configura automaticamente:
 
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
+- `KV_REST_API_URL`
+- `KV_REST_API_TOKEN`
+
+Sono supportati anche i nomi Upstash legacy `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN`.
 
 Se le variabili non sono configurate, il gioco continua a funzionare e mostra la classifica locale.
 
