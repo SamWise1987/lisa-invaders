@@ -7,22 +7,54 @@
   const VIEW = {
     desktop: { w: 900, h: 640 },
     portrait: { w: 390, h: 560 },
+    landscape: { w: 720, h: 400 },
   };
-  let portraitLayout = window.matchMedia('(max-width: 700px) and (orientation: portrait)').matches;
+  let layoutMode = 'desktop';
+  let portraitLayout = false;
+  let landscapeLayout = false;
   let W = VIEW.desktop.w;
   let H = VIEW.desktop.h;
   let pixelRatio = 1;
 
+  function detectLayoutMode() {
+    const coarse = window.matchMedia('(pointer: coarse)').matches;
+    const narrow = window.innerWidth <= 900 || window.innerHeight <= 520;
+    if (coarse && narrow) {
+      return window.matchMedia('(orientation: landscape)').matches ? 'landscape' : 'portrait';
+    }
+    return 'desktop';
+  }
+
+  function syncLayoutFlags() {
+    layoutMode = detectLayoutMode();
+    portraitLayout = layoutMode === 'portrait';
+    landscapeLayout = layoutMode === 'landscape';
+  }
+
+  function isCompactLayout() { return layoutMode !== 'desktop'; }
+
   function updateGameWidthLimit() {
-    const compactDesktop = !portraitLayout && window.innerHeight <= 850;
-    const reservedHeight = portraitLayout ? 264 : compactDesktop ? 184 : 214;
-    const availableHeight = Math.max(360, window.innerHeight - reservedHeight);
-    const maxWidth = Math.max(280, Math.floor(availableHeight * (W / H)));
+    syncLayoutFlags();
+    const inGame = document.body.classList.contains('in-game');
+    const compactDesktop = layoutMode === 'desktop' && window.innerHeight <= 850;
+    let reservedHeight;
+    if (isCompactLayout() && inGame) {
+      reservedHeight = landscapeLayout ? 20 : 36;
+    } else if (isCompactLayout()) {
+      reservedHeight = landscapeLayout ? 96 : 148;
+    } else {
+      reservedHeight = compactDesktop ? 184 : 214;
+    }
+    const availableHeight = Math.max(280, window.innerHeight - reservedHeight);
+    const availableWidth = Math.max(280, window.innerWidth - 16);
+    const heightBound = Math.floor(availableHeight * (W / H));
+    const maxWidth = Math.max(280, Math.min(heightBound, availableWidth));
     document.documentElement.style.setProperty('--game-max-width', `${maxWidth}px`);
   }
 
   function configureCanvas() {
-    const view = portraitLayout ? VIEW.portrait : VIEW.desktop;
+    syncLayoutFlags();
+    const view = VIEW[layoutMode] || VIEW.desktop;
     W = view.w;
     H = view.h;
     pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
@@ -187,12 +219,12 @@
     setPower('triple', tripleSeconds > 0, String(tripleSeconds));
   }
 
-  const initialPlayerH = portraitLayout ? 70 : 88;
+  const initialPlayerH = isCompactLayout() ? (landscapeLayout ? 64 : 70) : 88;
   const player = {
     w: Math.round(initialPlayerH * ASPECT.lisa), h: initialPlayerH,
     x: W / 2 - Math.round(initialPlayerH * ASPECT.lisa) / 2,
     targetX: W / 2 - Math.round(initialPlayerH * ASPECT.lisa) / 2,
-    y: H - (portraitLayout ? 80 : 98),
+    y: H - (landscapeLayout ? 72 : portraitLayout ? 80 : 98),
     speed: 420,
     cooldown: 0,
     invincible: 0,
@@ -206,7 +238,7 @@
   let boss = null;
   let enemyDir = 1;
   let enemySpeed = 0;
-  let enemyDrop = portraitLayout ? 18 : 22;
+  let enemyDrop = isCompactLayout() ? (landscapeLayout ? 14 : 18) : 22;
   let marchStep = 0;
   let marchTimer = 0;
   let enemyFireTimer = 0;
@@ -225,7 +257,7 @@
 
   function buildStars() {
     stars = [];
-    const count = portraitLayout ? 70 : 90;
+    const count = isCompactLayout() ? (landscapeLayout ? 55 : 70) : 90;
     for (let i = 0; i < count; i++) {
       const layer = Math.random();
       stars.push({
@@ -302,14 +334,16 @@
       spawnBoss();
       return;
     }
-    const cols = portraitLayout ? 5 : Math.min(7 + Math.floor((level - 1) / 2), 9);
-    const cellW = portraitLayout ? 42 : 46;
-    const eh = portraitLayout ? 52 : 68;
-    const gapX = portraitLayout ? 23 : 30;
-    const gapY = portraitLayout ? 11 : 16;
+    const cols = landscapeLayout
+      ? Math.min(7 + Math.floor((level - 1) / 3), 9)
+      : portraitLayout ? 5 : Math.min(7 + Math.floor((level - 1) / 2), 9);
+    const cellW = landscapeLayout ? 40 : portraitLayout ? 42 : 46;
+    const eh = landscapeLayout ? 44 : portraitLayout ? 52 : 68;
+    const gapX = landscapeLayout ? 20 : portraitLayout ? 23 : 30;
+    const gapY = landscapeLayout ? 9 : portraitLayout ? 11 : 16;
     const totalW = cols * cellW + (cols - 1) * gapX;
     const startX = (W - totalW) / 2;
-    const startY = portraitLayout ? 24 : 34;
+    const startY = landscapeLayout ? 18 : portraitLayout ? 24 : 34;
     ENEMY_ROWS.forEach((row, r) => {
       const ew = Math.round(eh * ASPECT[row.key]);
       for (let c = 0; c < cols; c++) {
@@ -331,16 +365,16 @@
 
   function spawnBoss() {
     const tier = Math.max(1, Math.floor(level / 5));
-    const w = portraitLayout ? 250 : 360;
+    const w = landscapeLayout ? 300 : portraitLayout ? 250 : 360;
     const h = Math.round(w * 2 / 3);
     const hp = 26 + tier * 12 + (activeRun.id === 'arcade' ? 8 : 0);
     boss = {
       x: W / 2 - w / 2,
-      y: portraitLayout ? 28 : 24,
+      y: landscapeLayout ? 18 : portraitLayout ? 28 : 24,
       w, h,
       hp,
       maxHp: hp,
-      vx: (portraitLayout ? 55 : 76) * activeRun.enemySpeed,
+      vx: (landscapeLayout ? 68 : portraitLayout ? 55 : 76) * activeRun.enemySpeed,
       fireTimer: 1.2,
       attackCount: tier,
       phase: 0,
@@ -356,7 +390,7 @@
     if (!boss?.alive) return;
     const cx = boss.x + boss.w / 2;
     const by = boss.y + boss.h * .82;
-    const speed = (portraitLayout ? 125 : 160) + level * 4;
+    const speed = (landscapeLayout ? 140 : portraitLayout ? 125 : 160) + level * 4;
     const pattern = boss.attackCount++ % 3;
     const make = (x, vx, vy, radius = 6) => enemyBullets.push({ x, y: by, vx, vy, r: radius, boss: true });
 
@@ -370,7 +404,7 @@
       const aimY = dy / length * speed;
       [-36, 0, 36].forEach(spread => make(cx, aimX + spread, aimY));
     } else {
-      const count = portraitLayout ? 5 : 7;
+      const count = isCompactLayout() ? (landscapeLayout ? 6 : 5) : 7;
       for (let i = 0; i < count; i++) {
         const x = boss.x + boss.w * (.12 + i * .76 / Math.max(1, count - 1));
         make(x, Math.sin(boss.phase + i) * 28, speed * (0.82 + i % 2 * .18), 5);
@@ -432,8 +466,10 @@
       '###....###',
       '##......##',
     ];
-    const positions = portraitLayout ? [W * 0.08, W * 0.37, W * 0.66] : [W * 0.17, W * 0.415, W * 0.66];
-    const bunkerY = H - (portraitLayout ? 145 : 180);
+    const positions = landscapeLayout
+      ? [W * 0.12, W * 0.4, W * 0.68]
+      : portraitLayout ? [W * 0.08, W * 0.37, W * 0.66] : [W * 0.17, W * 0.415, W * 0.66];
+    const bunkerY = H - (landscapeLayout ? 118 : portraitLayout ? 145 : 180);
     positions.forEach(px => {
       shape.forEach((rowStr, ry) => {
         [...rowStr].forEach((ch, rx) => {
@@ -490,9 +526,9 @@
   function resetGame() { startRun(activeRun); }
 
   function placePlayer() {
-    player.h = portraitLayout ? 70 : 88;
+    player.h = isCompactLayout() ? (landscapeLayout ? 64 : 70) : 88;
     player.w = Math.round(player.h * ASPECT.lisa);
-    player.y = H - (portraitLayout ? 80 : 98);
+    player.y = H - (landscapeLayout ? 72 : portraitLayout ? 80 : 98);
     player.x = W / 2 - player.w / 2;
     player.targetX = player.x;
   }
@@ -647,7 +683,7 @@
     player.x += (player.targetX - player.x) * Math.min(1, dt * 16);
     player.cooldown -= dt;
     if (player.invincible > 0) player.invincible -= dt;
-    if (keys[' '] || fireHeld || gamepadFire) firePlayer();
+    if (keys[' '] || fireHeld || gamepadFire || (meta?.autoFireMobile?.() && isCoarsePointer())) firePlayer();
 
     // Marcia nemici
     const alive = enemies.filter(e => e.alive);
@@ -1017,7 +1053,7 @@
     ctx.fillStyle = '#8fa0e0';
     const isCoarse = portraitLayout || window.matchMedia('(pointer: coarse)').matches;
     if (isCoarse) {
-      ctx.fillText('Trascina per muoverti · SPARA per sparare', W / 2, H - 22);
+      ctx.fillText(landscapeLayout ? '◎ spara · trascina per muoverti' : '◎ sinistra spara · trascina per muoverti', W / 2, H - 22);
     } else {
       ctx.fillText('← → per muoverti · SPAZIO o clic per sparare', W / 2, H - 24);
     }
@@ -1039,7 +1075,7 @@
   let dragging = false;
   let activePointerId = null;
   const isTouchPointer = e => e.pointerType === 'touch' || e.pointerType === 'pen';
-  const isCoarsePointer = () => portraitLayout || window.matchMedia('(pointer: coarse)').matches;
+  const isCoarsePointer = () => isCompactLayout() || window.matchMedia('(pointer: coarse)').matches;
 
   function canvasXFromEvent(e) {
     const rect = canvas.getBoundingClientRect();
@@ -1098,11 +1134,15 @@
   const btnPause = document.getElementById('btn-pause');
   const btnRestart = document.getElementById('btn-restart');
   const btnFire = document.getElementById('btn-fire');
+  const btnPauseMini = document.getElementById('btn-pause-mini');
+  const btnSoundMini = document.getElementById('btn-sound-mini');
 
   function toggleSound() {
     sound.enabled = !sound.enabled;
     localStorage.setItem('lisaInvadersSound', sound.enabled ? 'on' : 'off');
-    btnSound.textContent = sound.enabled ? '🔊 SUONO: ON' : '🔇 SUONO: OFF';
+    const label = sound.enabled ? '🔊 SUONO: ON' : '🔇 SUONO: OFF';
+    btnSound.textContent = label;
+    if (btnSoundMini) btnSoundMini.textContent = sound.enabled ? '🔊' : '🔇';
     if (sound.enabled) sound.ensure();
   }
   function togglePause() {
@@ -1111,30 +1151,45 @@
     updatePauseBtn();
   }
   function updatePauseBtn() {
-    btnPause.textContent = paused ? '▶ RIPRENDI' : '⏸ PAUSA';
+    const label = paused ? '▶ RIPRENDI' : '⏸ PAUSA';
+    btnPause.textContent = label;
+    if (btnPauseMini) btnPauseMini.textContent = paused ? '▶' : '⏸';
   }
 
   btnSound.textContent = sound.enabled ? '🔊 SUONO: ON' : '🔇 SUONO: OFF';
+  if (btnSoundMini) btnSoundMini.textContent = sound.enabled ? '🔊' : '🔇';
   btnSound.addEventListener('click', toggleSound);
   btnPause.addEventListener('click', togglePause);
+  if (btnSoundMini) btnSoundMini.addEventListener('click', toggleSound);
+  if (btnPauseMini) btnPauseMini.addEventListener('click', togglePause);
   btnRestart.addEventListener('click', () => state === STATE.START ? meta?.startSelectedRun?.() : resetGame());
 
   if (btnFire) {
+    let firePointerId = null;
     const startFire = e => {
       e.preventDefault();
+      e.stopPropagation();
       if (state === STATE.START) meta?.startSelectedRun?.();
       else if (state === STATE.GAMEOVER) startRun(activeRun);
+      firePointerId = e.pointerId;
       fireHeld = true;
+      btnFire.classList.add('is-active');
       sound.ensure();
       firePlayer();
+      meta?.tutorialSignal?.('fire');
     };
-    const endFire = e => { e.preventDefault(); fireHeld = false; };
+    const endFire = e => {
+      if (firePointerId !== null && e.pointerId !== firePointerId) return;
+      e.preventDefault();
+      firePointerId = null;
+      fireHeld = false;
+      btnFire.classList.remove('is-active');
+    };
     btnFire.addEventListener('pointerdown', startFire);
     btnFire.addEventListener('pointerup', endFire);
     btnFire.addEventListener('pointerleave', endFire);
     btnFire.addEventListener('pointercancel', endFire);
-    window.addEventListener('pointerup', () => { fireHeld = false; });
-    window.addEventListener('pointercancel', () => { fireHeld = false; });
+    btnFire.addEventListener('contextmenu', e => e.preventDefault());
   }
 
   function clearActiveInput() {
@@ -1144,6 +1199,7 @@
     activePointerId = null;
     gamepadAxis = 0;
     gamepadFire = false;
+    if (btnFire) btnFire.classList.remove('is-active');
   }
 
   window.addEventListener('lisa:start', event => startRun(event.detail || defaultRun));
@@ -1183,10 +1239,15 @@
 
   let resizeTimer = null;
   function applyResponsiveLayout() {
-    const nextPortrait = window.matchMedia('(max-width: 700px) and (orientation: portrait)').matches;
-    if (nextPortrait === portraitLayout) return;
-    portraitLayout = nextPortrait;
-    enemyDrop = portraitLayout ? 18 : 22;
+    const nextMode = detectLayoutMode();
+    if (nextMode === layoutMode) {
+      updateGameWidthLimit();
+      return;
+    }
+    layoutMode = nextMode;
+    portraitLayout = layoutMode === 'portrait';
+    landscapeLayout = layoutMode === 'landscape';
+    enemyDrop = isCompactLayout() ? (landscapeLayout ? 14 : 18) : 22;
     configureCanvas();
     buildStars();
     placePlayer();
@@ -1207,6 +1268,11 @@
     updateStatusUI(true);
     draw();
   }
+
+  window.addEventListener('lisa:play-mode', () => updateGameWidthLimit());
+  window.addEventListener('lisa:settings', () => {
+    document.body.classList.toggle('auto-fire-on', Boolean(meta?.autoFireMobile?.() && isCoarsePointer()));
+  });
 
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);

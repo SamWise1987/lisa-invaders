@@ -65,6 +65,7 @@
     screenShake: storedSettings.screenShake ?? true,
     highContrast: storedSettings.highContrast ?? false,
     haptics: storedSettings.haptics ?? true,
+    autoFireMobile: storedSettings.autoFireMobile ?? false,
   };
   const unlocked = safeJSON(KEYS.achievements, {});
   let selectedDifficulty = localStorage.getItem(KEYS.difficulty) || 'normal';
@@ -118,9 +119,18 @@
     screenShake: document.getElementById('setting-screen-shake'),
     highContrast: document.getElementById('setting-high-contrast'),
     haptics: document.getElementById('setting-haptics'),
+    autoFire: document.getElementById('setting-auto-fire'),
     replayTutorial: document.getElementById('btn-replay-tutorial'),
+    shareImage: document.getElementById('btn-share-image'),
+    shareCardLayer: document.getElementById('share-card-layer'),
+    shareCardPreview: document.getElementById('share-card-preview'),
+    shareCardDownload: document.getElementById('btn-share-card-download'),
+    shareCardNative: document.getElementById('btn-share-card-native'),
+    shareCardClose: document.getElementById('btn-share-card-close'),
     toastLayer: document.getElementById('toast-layer'),
   };
+  let shareCardBlob = null;
+  let shareCardUrl = '';
 
   function toast(message) {
     const item = document.createElement('div');
@@ -130,14 +140,54 @@
     setTimeout(() => item.remove(), settings.reducedMotion ? 1400 : 2600);
   }
 
+  function isMobileUI() {
+    return window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 900;
+  }
+
   function applySettings() {
     document.body.classList.toggle('high-contrast', settings.highContrast);
+    document.body.classList.toggle('auto-fire-on', Boolean(settings.autoFireMobile && isMobileUI()));
     el.reducedMotion.checked = settings.reducedMotion;
     el.screenShake.checked = settings.screenShake;
     el.highContrast.checked = settings.highContrast;
     el.haptics.checked = settings.haptics;
+    if (el.autoFire) el.autoFire.checked = settings.autoFireMobile;
     localStorage.setItem(KEYS.settings, JSON.stringify(settings));
     window.dispatchEvent(new CustomEvent('lisa:settings', { detail: { ...settings } }));
+  }
+
+  async function requestPlayFullscreen() {
+    if (!isMobileUI()) return;
+    const root = document.documentElement;
+    try {
+      if (root.requestFullscreen) await root.requestFullscreen({ navigationUI: 'hide' });
+      else if (root.webkitRequestFullscreen) await root.webkitRequestFullscreen();
+    } catch {
+      /* fullscreen opzionale */
+    }
+  }
+
+  function exitPlayFullscreen() {
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function enterPlayMode() {
+    document.body.classList.add('in-game');
+    document.body.classList.toggle('mobile-ui', isMobileUI());
+    applySettings();
+    window.dispatchEvent(new Event('lisa:play-mode'));
+    requestPlayFullscreen();
+  }
+
+  function exitPlayMode() {
+    document.body.classList.remove('in-game', 'mobile-ui', 'auto-fire-on');
+    window.dispatchEvent(new Event('lisa:play-mode'));
+    exitPlayFullscreen();
   }
 
   function selectDifficulty(id) {
@@ -174,6 +224,7 @@
     el.modal.classList.add('is-hidden');
     el.runMode.classList.remove('is-hidden');
     el.runMode.textContent = currentRun.daily ? '★ MISSIONE ' + currentRun.mission.date : currentRun.label;
+    enterPlayMode();
     window.dispatchEvent(new CustomEvent('lisa:start', { detail: currentRun }));
   }
 
@@ -182,6 +233,7 @@
     el.gameover.classList.add('is-hidden');
     el.startMenu.classList.remove('is-hidden');
     el.runMode.classList.add('is-hidden');
+    exitPlayMode();
     window.dispatchEvent(new Event('lisa:menu'));
   }
 
@@ -207,7 +259,7 @@
   function tutorialCopy(step) {
     return [
       ['1. MUOVITI', 'Usa le frecce, A/D, il gamepad o trascina Lisa.'],
-      ['2. SPARA', 'Premi SPAZIO, il tasto gamepad o tieni premuto SPARA.'],
+      ['2. SPARA', 'Pollice sinistro su ◎ per sparare, oppure attiva auto-fuoco nelle opzioni.'],
       ['3. POWER-UP', 'R = fuoco rapido · 3 = colpo triplo · S = scudo.'],
     ][step];
   }
@@ -402,6 +454,145 @@
     if (result.score > 0) saveCurrentScore();
   }
 
+  function revokeShareCardUrl() {
+    if (shareCardUrl) {
+      URL.revokeObjectURL(shareCardUrl);
+      shareCardUrl = '';
+    }
+    shareCardBlob = null;
+  }
+
+  function loadShareImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  async function buildShareCard(result) {
+    const CARD_W = 1080;
+    const CARD_H = 1350;
+    const canvas = document.createElement('canvas');
+    canvas.width = CARD_W;
+    canvas.height = CARD_H;
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createRadialGradient(CARD_W / 2, CARD_H * 0.22, 0, CARD_W / 2, CARD_H * 0.22, CARD_W * 0.85);
+    gradient.addColorStop(0, '#232f63');
+    gradient.addColorStop(0.55, '#10173a');
+    gradient.addColorStop(1, '#090d24');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+    ctx.strokeStyle = '#c8102e';
+    ctx.lineWidth = 14;
+    ctx.strokeRect(28, 28, CARD_W - 56, CARD_H - 56);
+
+    try {
+      const lisa = await loadShareImage('assets/lisa.png');
+      const lisaH = 280;
+      const lisaW = Math.round(lisaH * (lisa.width / lisa.height));
+      ctx.drawImage(lisa, CARD_W / 2 - lisaW / 2, 96, lisaW, lisaH);
+    } catch {
+      /* asset opzionale */
+    }
+
+    const name = cleanName(el.playerName.value);
+    const modeLabel = currentRun?.daily ? 'MISSIONE DEL GIORNO' : (currentRun?.label || 'NORMALE');
+    const dateLabel = new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#f5edd8';
+    ctx.font = 'bold 68px "Courier New", monospace';
+    ctx.fillText('LISA INVADERS', CARD_W / 2, 430);
+
+    ctx.fillStyle = '#ffd56a';
+    ctx.font = 'bold 52px "Courier New", monospace';
+    ctx.fillText(name, CARD_W / 2, 510);
+
+    ctx.fillStyle = '#8fa0e0';
+    ctx.font = '36px "Courier New", monospace';
+    ctx.fillText('PUNTEGGIO', CARD_W / 2, 610);
+
+    ctx.fillStyle = '#f5edd8';
+    ctx.font = 'bold 156px "Courier New", monospace';
+    ctx.shadowColor = 'rgba(200,16,46,.75)';
+    ctx.shadowBlur = 28;
+    ctx.fillText(Number(result.score).toLocaleString('it-IT'), CARD_W / 2, 780);
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = '#cdd6f0';
+    ctx.font = '40px "Courier New", monospace';
+    ctx.fillText(`LIVELLO ${result.level} · RECORD ${Number(result.highScore).toLocaleString('it-IT')}`, CARD_W / 2, 870);
+    ctx.fillText(modeLabel, CARD_W / 2, 940);
+    ctx.fillStyle = '#8fa0e0';
+    ctx.font = '30px "Courier New", monospace';
+    ctx.fillText(dateLabel, CARD_W / 2, 1000);
+
+    ctx.fillStyle = '#f5edd8';
+    ctx.font = 'bold 34px "Courier New", monospace';
+    ctx.fillText('🍺 Difendi la birra artigianale!', CARD_W / 2, 1120);
+    ctx.fillStyle = '#c8102e';
+    ctx.font = 'bold 32px "Courier New", monospace';
+    ctx.fillText('lisa-invaders.vercel.app', CARD_W / 2, CARD_H - 88);
+
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.92));
+  }
+
+  async function openShareCard() {
+    if (!currentResult) return;
+    try {
+      revokeShareCardUrl();
+      shareCardBlob = await buildShareCard(currentResult);
+      if (!shareCardBlob) throw new Error('Immagine non generata');
+      shareCardUrl = URL.createObjectURL(shareCardBlob);
+      el.shareCardPreview.src = shareCardUrl;
+      el.shareCardLayer.classList.remove('is-hidden');
+    } catch {
+      toast('IMMAGINE NON DISPONIBILE');
+    }
+  }
+
+  function closeShareCard() {
+    el.shareCardLayer.classList.add('is-hidden');
+    revokeShareCardUrl();
+    el.shareCardPreview.removeAttribute('src');
+  }
+
+  function downloadShareCard() {
+    if (!shareCardBlob) return;
+    const url = shareCardUrl || URL.createObjectURL(shareCardBlob);
+    const link = document.createElement('a');
+    const name = cleanName(el.playerName.value);
+    link.href = url;
+    link.download = `lisa-invaders-${name}-${currentResult?.score || 0}.png`;
+    link.click();
+    if (!shareCardUrl) URL.revokeObjectURL(url);
+    toast('IMMAGINE SCARICATA');
+  }
+
+  async function shareShareCard() {
+    if (!shareCardBlob || !currentResult) return;
+    const name = cleanName(el.playerName.value);
+    const text = `Lisa Invaders — ${name} ha fatto ${currentResult.score} punti al livello ${currentResult.level}!`;
+    const file = new File([shareCardBlob], `lisa-invaders-${name}.png`, { type: 'image/png' });
+    try {
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ title: 'Lisa Invaders', text, files: [file], url: location.href });
+        return;
+      }
+      if (navigator.share) {
+        await navigator.share({ title: 'Lisa Invaders', text: text + ' ' + location.href });
+        return;
+      }
+      downloadShareCard();
+    } catch (error) {
+      if (error?.name !== 'AbortError') downloadShareCard();
+    }
+  }
+
   async function shareResult() {
     if (!currentResult) return;
     const text = 'Lisa Invaders — ' + currentResult.score + ' punti, livello ' + currentResult.level + ', record ' + currentResult.highScore + '.';
@@ -449,6 +640,11 @@
   el.tabOnline.addEventListener('click', () => renderLeaderboard('online'));
   el.saveScore.addEventListener('click', saveCurrentScore);
   el.share.addEventListener('click', shareResult);
+  if (el.shareImage) el.shareImage.addEventListener('click', openShareCard);
+  if (el.shareCardClose) el.shareCardClose.addEventListener('click', closeShareCard);
+  if (el.shareCardDownload) el.shareCardDownload.addEventListener('click', downloadShareCard);
+  if (el.shareCardNative) el.shareCardNative.addEventListener('click', shareShareCard);
+  if (el.shareCardLayer) el.shareCardLayer.addEventListener('click', event => { if (event.target === el.shareCardLayer) closeShareCard(); });
   el.retry.addEventListener('click', () => startRun({ config: currentRun || runConfig() }));
   el.mainMenu.addEventListener('click', showStartMenu);
   el.replayTutorial.addEventListener('click', () => {
@@ -460,7 +656,13 @@
   el.screenShake.addEventListener('change', () => { settings.screenShake = el.screenShake.checked; applySettings(); });
   el.highContrast.addEventListener('change', () => { settings.highContrast = el.highContrast.checked; applySettings(); });
   el.haptics.addEventListener('change', () => { settings.haptics = el.haptics.checked; applySettings(); });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
+  if (el.autoFire) el.autoFire.addEventListener('change', () => { settings.autoFireMobile = el.autoFire.checked; applySettings(); });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      closeModal();
+      closeShareCard();
+    }
+  });
 
   const daily = getDailyConfig();
   el.dailyDescription.textContent = daily.description;
@@ -480,6 +682,7 @@
     tutorialSignal,
     unlockAchievement,
     motionReduced: () => settings.reducedMotion,
+    autoFireMobile: () => settings.autoFireMobile,
     screenShakeEnabled: () => settings.screenShake && !settings.reducedMotion,
     haptic,
     notifyGamepad,
