@@ -226,7 +226,6 @@
   }
   button:hover, button:focus-visible { background: var(--bdb-red); color: #fff; box-shadow: 0 0 12px rgba(200,16,46,.7); outline: none; }
   button:active { transform: scale(.97); }
-  .hint { color: #6d7fc4; font-size: 11px; line-height: 1.5; text-align: center; }
   #instructions {
     width: min(720px, calc(100vw - 20px));
     margin-top: 2px;
@@ -370,7 +369,6 @@
   /* Modalità partita: canvas più grande, UI compatta */
   body.in-game { gap: 4px; padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: max(4px, env(safe-area-inset-bottom)); }
   body.in-game #page-header,
-  body.in-game .hint,
   body.in-game #instructions { display: none; }
   body.in-game #game-column {
     width: min(100vw - 16px, var(--game-max-width));
@@ -437,7 +435,7 @@
     #page-header { min-height: 58px; }
     .rsu-logo img { height: 58px; }
     #game-column { width: min(900px, calc(100vw - 20px), var(--game-max-width)); gap: 6px; }
-    #instructions, .hint { display: none; }
+    #instructions { display: none; }
   }
 
   @media (max-width: 700px), (pointer: coarse) {
@@ -471,7 +469,7 @@
     .score-box strong { font-size: 16px; }
     .settings-grid { grid-template-columns: 1fr; }
     .modal-card { padding: 14px 10px; }
-    .hint, #instructions { display: none; }
+    #instructions { display: none; }
     .instr-mobile { display: block; }
     .instr-desktop { display: none; }
   }
