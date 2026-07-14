@@ -227,17 +227,12 @@
   function dismissIntro() {
     introVisible = false;
     el.introOverlay.classList.add('is-hidden');
+    // Una sola volta per sessione browser (tab): non riappare finché la scheda resta aperta.
     sessionStorage.setItem(KEYS.intro, 'yes');
-    const queued = pendingRun;
-    pendingRun = null;
-    if (queued) startRun(queued);
   }
 
   function startRun(options = {}) {
-    if (introVisible) {
-      pendingRun = options;
-      return;
-    }
+    if (introVisible) return;
     currentRun = options.config || runConfig(Boolean(options.daily), Boolean(options.forceTutorial));
     currentResult = null;
     currentScoreId = null;
