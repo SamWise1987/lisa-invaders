@@ -1,3 +1,7 @@
 .vercel
 .DS_Store
 .env*
+assets/source/*.png
+assets/source/*.jpg
+assets/source/*.jpeg
+assets/source/*.webp

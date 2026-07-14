@@ -90,10 +90,10 @@
 
   const ASPECT = {
     lisa: 761 / 1120,
-    lustweiser: 1024 / 1536,
-    necks: 1024 / 1536,
-    borona: 1024 / 1536,
-    bennets: 1024 / 1536,
+    lustweiser: 145 / 600,
+    necks: 156 / 600,
+    borona: 143 / 600,
+    bennets: 295 / 600,
   };
 
   const ENEMY_ROWS = [

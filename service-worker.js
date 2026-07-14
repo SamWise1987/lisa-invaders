@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lisa-invaders-v8';
+const CACHE_NAME = 'lisa-invaders-v9';
 const APP_SHELL = [
   '/',
   '/index.html',
