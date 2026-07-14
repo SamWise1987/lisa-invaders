@@ -323,6 +323,42 @@
   #toast-layer { position: fixed; z-index: 30; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 7px; pointer-events: none; }
   .toast { padding: 9px 13px; border: 1px solid #ffd56a; border-radius: 6px; background: #090d24; color: #ffd56a; font-size: 11px; box-shadow: 0 0 16px rgba(255,213,106,.3); }
 
+  #intro-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    background: rgba(2,4,14,.9);
+  }
+  .intro-card { width: min(520px, 100%); }
+  .intro-message {
+    margin: 14px auto 10px;
+    color: var(--bdb-cream);
+    font-size: clamp(14px, 2.6vw, 18px);
+    line-height: 1.55;
+    letter-spacing: .4px;
+  }
+  .intro-mercury { color: #ffd56a; font-weight: 700; }
+  .intro-cta-copy {
+    margin: 0 auto 16px;
+    color: var(--muted);
+    font-size: clamp(12px, 2.2vw, 15px);
+    line-height: 1.45;
+  }
+  #btn-dismiss-intro {
+    min-width: 180px;
+    padding: 13px 22px;
+    background: var(--bdb-red);
+    border-color: var(--bdb-red);
+    color: #fff;
+    font-size: 15px;
+    letter-spacing: 2px;
+    box-shadow: 0 0 18px rgba(200,16,46,.55);
+  }
+
   /* Modal scheda condivisibile IG/FB */
   #share-card-layer { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 14px; background: rgba(2,4,14,.92); }
   .share-card-panel { width: min(420px, 100%); max-height: 94dvh; overflow: auto; padding: 14px; border: 2px solid var(--bdb-red); border-radius: 10px; background: #090d24; box-shadow: 0 0 30px rgba(200,16,46,.45); text-align: center; }
@@ -578,6 +614,14 @@
         <button id="btn-share-card-native" type="button">CONDIVIDI</button>
         <button id="btn-share-card-close" type="button">CHIUDI</button>
       </div>
+    </div>
+  </section>
+  <section id="intro-overlay" class="is-hidden" aria-modal="true" role="dialog" aria-labelledby="intro-title" aria-describedby="intro-message intro-cta">
+    <div class="intro-card arcade-panel">
+      <h2 id="intro-title">🍺 LISA INVADERS</h2>
+      <p id="intro-message" class="intro-message">Aiuta Lisa a difendere la birra artigianale dalle birre di <span class="intro-mercury">Mer…curio</span>.</p>
+      <p id="intro-cta" class="intro-cta-copy">Gioca e condividi online il tuo risultato!</p>
+      <button id="btn-dismiss-intro" type="button">GIOCA!</button>
     </div>
   </section>
   <div id="toast-layer" aria-live="polite"></div>

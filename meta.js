@@ -8,6 +8,7 @@
     scores: 'lisaInvadersScores',
     player: 'lisaInvadersPlayerName',
     daily: 'lisaInvadersDaily',
+    intro: 'lisaInvadersIntroSeen',
   };
 
   const DIFFICULTIES = {
@@ -79,8 +80,12 @@
   let lastRunSignature = '';
   let lastHaptic = 0;
   let gamepadNotified = false;
+  let introVisible = false;
+  let pendingRun = null;
 
   const el = {
+    introOverlay: document.getElementById('intro-overlay'),
+    dismissIntro: document.getElementById('btn-dismiss-intro'),
     startMenu: document.getElementById('start-menu'),
     start: document.getElementById('btn-start-run'),
     daily: document.getElementById('btn-daily'),
@@ -213,7 +218,26 @@
     };
   }
 
+  function showIntro() {
+    introVisible = true;
+    el.introOverlay.classList.remove('is-hidden');
+    el.dismissIntro?.focus();
+  }
+
+  function dismissIntro() {
+    introVisible = false;
+    el.introOverlay.classList.add('is-hidden');
+    sessionStorage.setItem(KEYS.intro, 'yes');
+    const queued = pendingRun;
+    pendingRun = null;
+    if (queued) startRun(queued);
+  }
+
   function startRun(options = {}) {
+    if (introVisible) {
+      pendingRun = options;
+      return;
+    }
     currentRun = options.config || runConfig(Boolean(options.daily), Boolean(options.forceTutorial));
     currentResult = null;
     currentScoreId = null;
@@ -625,6 +649,7 @@
   }
 
   document.querySelectorAll('.difficulty-button').forEach(button => button.addEventListener('click', () => selectDifficulty(button.dataset.difficulty)));
+  if (el.dismissIntro) el.dismissIntro.addEventListener('click', dismissIntro);
   el.start.addEventListener('click', () => startRun());
   el.daily.addEventListener('click', () => startRun({ daily: true }));
   el.howto.addEventListener('click', () => startRun({ forceTutorial: true }));
@@ -659,8 +684,16 @@
   if (el.autoFire) el.autoFire.addEventListener('change', () => { settings.autoFireMobile = el.autoFire.checked; applySettings(); });
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
+      if (introVisible) {
+        dismissIntro();
+        return;
+      }
       closeModal();
       closeShareCard();
+    }
+    if (introVisible && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      dismissIntro();
     }
   });
 
@@ -670,6 +703,7 @@
   selectDifficulty(selectedDifficulty);
   applySettings();
   renderLeaderboard('local');
+  if (!sessionStorage.getItem(KEYS.intro)) showIntro();
 
   window.LisaMeta = {
     DIFFICULTIES,
