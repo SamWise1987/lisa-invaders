@@ -81,7 +81,6 @@
   let lastHaptic = 0;
   let gamepadNotified = false;
   let introVisible = false;
-  let pendingRun = null;
 
   const el = {
     introOverlay: document.getElementById('intro-overlay'),
