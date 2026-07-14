@@ -71,10 +71,10 @@
   // ---------- Assets ----------
   const IMAGES = {
     lisa: 'assets/lisa.png',
-    bud: 'assets/bud.png',
-    becks: 'assets/becks.png',
-    corona: 'assets/corona.png',
-    tennents: 'assets/tennents.png',
+    lustweiser: 'assets/lustweiser.png',
+    necks: 'assets/necks.png',
+    borona: 'assets/borona.png',
+    bennets: 'assets/bennets.png',
     boss: 'assets/boss.png',
   };
   const sprites = {};
@@ -90,17 +90,17 @@
 
   const ASPECT = {
     lisa: 761 / 1120,
-    bud: 178 / 600,
-    becks: 155 / 600,
-    tennents: 278 / 600,
-    corona: 147 / 600,
+    lustweiser: 1024 / 1536,
+    necks: 1024 / 1536,
+    borona: 1024 / 1536,
+    bennets: 1024 / 1536,
   };
 
   const ENEMY_ROWS = [
-    { key: 'bud',      name: "Bud",       points: 40 },
-    { key: 'becks',    name: "Beck's",    points: 30 },
-    { key: 'tennents', name: "Tennent's", points: 20 },
-    { key: 'corona',   name: 'Corona',    points: 10 },
+    { key: 'lustweiser', name: 'Lustweiser', points: 40 },
+    { key: 'necks',      name: "Neck's",     points: 30 },
+    { key: 'bennets',    name: 'Bennets',    points: 20 },
+    { key: 'borona',     name: 'Borona',     points: 10 },
   ];
 
   const POWER = { RAPID: 'rapid', TRIPLE: 'triple', SHIELD: 'shield' };

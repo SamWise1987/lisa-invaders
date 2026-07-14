@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lisa-invaders-v6';
+const CACHE_NAME = 'lisa-invaders-v7';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -10,10 +10,10 @@ const APP_SHELL = [
   '/assets/icon-512.png',
   '/assets/lisa.png',
   '/assets/boss.png',
-  '/assets/bud.png',
-  '/assets/becks.png',
-  '/assets/corona.png',
-  '/assets/tennents.png',
+  '/assets/lustweiser.png',
+  '/assets/necks.png',
+  '/assets/borona.png',
+  '/assets/bennets.png',
   '/assets/rsu-cgil-flai.png'
 ];
 

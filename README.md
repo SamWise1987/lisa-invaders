@@ -1,6 +1,6 @@
 # 🍺 Lisa Invaders
 
-Arcade browser game responsive per desktop e mobile: Lisa difende la birra italiana da Bud, Beck's, Tennent's e Corona.
+Arcade browser game responsive per desktop e mobile: Lisa difende la birra italiana da Lustweiser, Neck's, Borona e Bennets.
 
 **Gioca online:** [lisa-invaders.vercel.app](https://lisa-invaders.vercel.app)
 
