@@ -9,6 +9,7 @@
     player: 'lisaInvadersPlayerName',
     daily: 'lisaInvadersDaily',
     intro: 'lisaInvadersIntroSeen',
+    onlineId: 'lisaInvadersOnlineId',
   };
 
   const DIFFICULTIES = {
@@ -366,6 +367,15 @@
     return clean || 'GIOCATORE';
   }
 
+  function getOnlinePlayerId() {
+    let id = localStorage.getItem(KEYS.onlineId);
+    if (!id) {
+      id = 'p-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem(KEYS.onlineId, id);
+    }
+    return id;
+  }
+
   function saveLocalEntry(entry) {
     const scores = getScores().filter(item => item.id !== entry.id);
     scores.push(entry);
@@ -389,20 +399,23 @@
   async function submitOnline(entry) {
     try {
       await apiRequest('/api/leaderboard', { method: 'POST', body: JSON.stringify(entry) });
-      toast('PUNTEGGIO ONLINE SALVATO');
+      if (activeLeaderboard === 'online' && !el.modal.classList.contains('is-hidden')) {
+        await renderLeaderboard('online');
+      }
+      return true;
     } catch {
       toast('CLASSIFICA ONLINE NON CONFIGURATA');
+      return false;
     }
   }
 
-  function saveCurrentScore() {
+  async function saveCurrentScore() {
     if (!currentResult || currentResult.score <= 0) return;
     const name = cleanName(el.playerName.value);
     el.playerName.value = name;
     localStorage.setItem(KEYS.player, name);
     if (!currentScoreId) currentScoreId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
-    const entry = {
-      id: currentScoreId,
+    const base = {
       name,
       score: Math.round(currentResult.score),
       level: Math.round(currentResult.level),
@@ -410,10 +423,10 @@
       daily: Boolean(currentRun?.daily),
       date: new Date().toISOString(),
     };
-    saveLocalEntry(entry);
+    saveLocalEntry({ id: currentScoreId, ...base });
     renderLeaderboard('local');
-    submitOnline(entry);
-    toast('PUNTEGGIO SALVATO');
+    const savedOnline = await submitOnline({ id: getOnlinePlayerId(), ...base });
+    toast(savedOnline ? 'PUNTEGGIO SALVATO' : 'PUNTEGGIO SALVATO IN LOCALE');
   }
 
   function appendScoreRows(entries) {
@@ -449,8 +462,8 @@
     }
     el.leaderboardStatus.textContent = 'Caricamento classifica online…';
     try {
-      const data = await apiRequest('/api/leaderboard');
-      el.leaderboardStatus.textContent = 'I migliori 10 punteggi online';
+      const data = await apiRequest(`/api/leaderboard?_=${Date.now()}`);
+      el.leaderboardStatus.textContent = 'Top 10 online · aggiornata ora';
       appendScoreRows(Array.isArray(data.entries) ? data.entries : []);
     } catch (error) {
       el.leaderboardStatus.textContent = 'Online non configurato: serve Upstash Redis su Vercel';
@@ -469,7 +482,7 @@
       : 'Continua a giocare per sbloccare nuovi obiettivi';
     el.playerName.value = localStorage.getItem(KEYS.player) || 'GIOCATORE';
     el.gameover.classList.remove('is-hidden');
-    if (result.score > 0) saveCurrentScore();
+    if (result.score > 0) void saveCurrentScore();
   }
 
   function revokeShareCardUrl() {

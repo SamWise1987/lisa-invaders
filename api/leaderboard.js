@@ -96,8 +96,16 @@ module.exports = async function leaderboard(req, res) {
       return;
     }
     await command(['HSET', DETAIL_KEY, entry.id, JSON.stringify(entry)]);
-    await command(['ZADD', SCORE_KEY, String(entry.score), entry.id]);
-    await command(['ZREMRANGEBYRANK', SCORE_KEY, '0', '-101']);
+    await command(['ZADD', SCORE_KEY, 'GT', String(entry.score), entry.id]);
+    const count = Number(await command(['ZCARD', SCORE_KEY]));
+    if (count > 10) {
+      const removeThrough = count - 11;
+      const removedIds = await command(['ZRANGE', SCORE_KEY, '0', String(removeThrough)]);
+      if (Array.isArray(removedIds) && removedIds.length) {
+        await command(['HDEL', DETAIL_KEY, ...removedIds]);
+      }
+      await command(['ZREMRANGEBYRANK', SCORE_KEY, '0', String(removeThrough)]);
+    }
     json(res, 200, { online: true, saved: true });
   } catch (error) {
     json(res, 500, { error: 'Classifica temporaneamente non disponibile' });

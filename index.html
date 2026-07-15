@@ -138,6 +138,7 @@
   .power-chip .power-time { display: none; font-size: 10px; }
   .power-chip.active { color: var(--bdb-cream); border-color: currentColor; box-shadow: 0 0 9px currentColor; }
   .power-chip.active .power-time { display: inline; }
+  .power-chip[data-power="shield"].active .power-time { display: inline; font-weight: 700; }
   .power-chip[data-power="rapid"].active { color: #8fd4ff; }
   .power-chip[data-power="triple"].active { color: #ffd56a; }
   .power-chip[data-power="shield"].active { color: #9eff9e; }
@@ -623,7 +624,7 @@
   </section>
   <div id="toast-layer" aria-live="polite"></div>
 
-  <!-- deploy-check: parody-beers-sprites-v9 -->
+  <!-- deploy-check: gameplay-fixes-v10 -->
   <script src="meta.js"></script>
   <script src="game.js"></script>
   <script>

@@ -198,7 +198,7 @@
   function updateStatusUI(force = false) {
     const rapidSeconds = Math.max(0, Math.ceil(player.rapidT));
     const tripleSeconds = Math.max(0, Math.ceil(player.tripleT));
-    const signature = [score, highScore, level, lives, player.shield ? 1 : 0, rapidSeconds, tripleSeconds].join('|');
+    const signature = [score, highScore, level, lives, player.shields, rapidSeconds, tripleSeconds].join('|');
     if (!force && signature === statusSignature) return;
     statusSignature = signature;
     statusEls.score.textContent = score;
@@ -214,7 +214,8 @@
       const names = { shield: 'Scudo', rapid: 'Fuoco rapido', triple: 'Colpo triplo' };
       el.setAttribute('aria-label', active ? `${names[key]} attivo${value !== 'ON' ? ` per ${value} secondi` : ''}` : `${names[key]} non attivo`);
     };
-    setPower('shield', player.shield, 'ON');
+    const shieldLabel = player.shields > 1 ? `×${player.shields}` : (player.shields === 1 ? 'ON' : '—');
+    setPower('shield', player.shields > 0, shieldLabel);
     setPower('rapid', rapidSeconds > 0, String(rapidSeconds));
     setPower('triple', tripleSeconds > 0, String(tripleSeconds));
   }
@@ -229,7 +230,7 @@
     cooldown: 0,
     invincible: 0,
     recoil: 0,
-    shield: false,
+    shields: 0,
     rapidT: 0,
     tripleT: 0,
   };
@@ -445,6 +446,8 @@
         localStorage.setItem('lisaInvadersHigh', highScore);
       }
       addPopup(defeated.x + defeated.w / 2, defeated.y + defeated.h / 2, `BOSS +${bonus}`, '#ffd56a', portraitLayout ? 20 : 28);
+      lives++;
+      addPopup(defeated.x + defeated.w / 2, defeated.y - 24, '+1 VITA', '#9eff9e', portraitLayout ? 18 : 22);
       foamExplosion(defeated.x + defeated.w / 2, defeated.y + defeated.h / 2, '#c8102e', 70);
       addShake(.55, 16);
       sound.boom();
@@ -509,7 +512,7 @@
     resetCombo();
     placePlayer();
     player.invincible = 0;
-    player.shield = false;
+    player.shields = 0;
     player.rapidT = 0;
     player.tripleT = 0;
     player.recoil = 0;
@@ -611,6 +614,18 @@
     return bx > r.x - br && bx < r.x + r.w + br && by > r.y - br && by < r.y + r.h + br;
   }
 
+  function playerBodyHitbox() {
+    const insetX = player.w * 0.3;
+    const insetTop = player.h * 0.12;
+    const insetBottom = player.h * 0.06;
+    return {
+      x: player.x + insetX,
+      y: player.y + insetTop,
+      w: player.w - insetX * 2,
+      h: player.h - insetTop - insetBottom,
+    };
+  }
+
   function applyPowerUp(type) {
     sound.powerUp();
     meta?.haptic?.([18, 28, 18]);
@@ -621,8 +636,10 @@
       player.tripleT = 8;
       addPopup(player.x + player.w / 2, player.y - 20, 'TRIPLO!', '#ffd56a');
     } else if (type === POWER.SHIELD) {
-      player.shield = true;
-      addPopup(player.x + player.w / 2, player.y - 20, 'SCUDO!', '#9eff9e');
+      if (activeRun.id === 'arcade') player.shields += 1;
+      else player.shields = 1;
+      const label = player.shields > 1 ? `SCUDO ×${player.shields}` : 'SCUDO!';
+      addPopup(player.x + player.w / 2, player.y - 20, label, '#9eff9e');
     }
   }
 
@@ -776,11 +793,12 @@
           return false;
         }
       }
-      if (player.invincible <= 0 && rectHit(b.x, b.y, b.r, player)) {
-        if (player.shield) {
-          player.shield = false;
+      if (player.invincible <= 0 && rectHit(b.x, b.y, Math.min(b.r, 3), playerBodyHitbox())) {
+        if (player.shields > 0) {
+          player.shields--;
           foamExplosion(b.x, b.y, '#9eff9e', 16);
-          addPopup(player.x + player.w / 2, player.y, 'SCUDO!', '#9eff9e', 16);
+          const label = player.shields > 0 ? `SCUDO ×${player.shields}` : 'SCUDO!';
+          addPopup(player.x + player.w / 2, player.y, label, '#9eff9e', 16);
           return false;
         }
         playerHit();
@@ -935,10 +953,17 @@
     if (player.invincible <= 0 || Math.floor(player.invincible * 10) % 2 === 0) {
       drawBottle('lisa', player.x, py, player.w, player.h);
     }
-    if (player.shield || player.rapidT > 0 || player.tripleT > 0) {
-      ctx.strokeStyle = player.shield ? '#9eff9e' : player.tripleT > 0 ? '#ffd56a' : '#8fd4ff';
+    if (player.shields > 0 || player.rapidT > 0 || player.tripleT > 0) {
+      ctx.strokeStyle = player.shields > 0 ? '#9eff9e' : player.tripleT > 0 ? '#ffd56a' : '#8fd4ff';
       ctx.lineWidth = 2;
       ctx.strokeRect(player.x - 4, py - 4, player.w + 8, player.h + 8);
+      if (player.shields > 1) {
+        ctx.fillStyle = '#9eff9e';
+        ctx.font = `bold ${portraitLayout ? 12 : 14}px "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`×${player.shields}`, player.x + player.w / 2, py - 10);
+        ctx.textAlign = 'left';
+      }
     }
 
     playerBullets.forEach(b => {
